@@ -1,5 +1,5 @@
-# kit
-java版http服务器
+# httpkit
+精巧的java版http服务器
 
 ### 使用方法
 
