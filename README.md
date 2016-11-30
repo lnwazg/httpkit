@@ -10,7 +10,7 @@ java版http服务器
 	//设置上下文路径
         server.setContextPath("root");
 
-	//设置controller类
+	//设置controller类的扫描包
         server.packageSearchAndInit("com.lnwazg.main.ctrl");
 
 	//设置自动磁盘扫描
