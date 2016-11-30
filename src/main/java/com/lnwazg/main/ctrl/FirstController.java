@@ -27,13 +27,14 @@ public class FirstController extends Controller
         person.name = getParam("fff");
         list.add(person);
         
+        ok("You are great!");
         //        okJson(GsonHelper.gson.toJson(list));
         //        okJson(list);
         //        okJson(new FrontObj().success().setData(list));
         //        okJson(success(list));
         //        okJson(fail(list));
         //        okJson(fail(list,10002,"转换错误"));
-        okJson(fail(10002, "转换错误"));
+        //        okJson(fail(10002, "转换错误"));
         //        okJson(fail(10003));
     }
     
