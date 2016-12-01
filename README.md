@@ -63,7 +63,7 @@ public class FirstController extends Controller
         person.name = getParam("fff");
         list.add(person);
         
-        //输出abc
+        //输出abc。
         ok("abc");
         
         //输出一个json对象。
