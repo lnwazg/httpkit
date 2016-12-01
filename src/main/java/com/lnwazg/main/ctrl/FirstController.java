@@ -4,12 +4,15 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.CharEncoding;
-
 import com.lnwazg.httpkit.anno.BasePath;
 import com.lnwazg.httpkit.controller.Controller;
-import com.lnwazg.httpkit.mime.MimeMappingMap;
 
+/**
+ * 示例controller<br>
+ * 注解指定这个类的path
+ * @author nan.li
+ * @version 2016年11月30日
+ */
 @BasePath("/base")
 public class FirstController extends Controller
 {
@@ -27,7 +30,12 @@ public class FirstController extends Controller
         person.name = getParam("fff");
         list.add(person);
         
-        ok("You are great!");
+        //输出abc
+        ok("abc");
+        
+        //输出一个json对象
+        //        okJson(list);
+        
         //        okJson(GsonHelper.gson.toJson(list));
         //        okJson(list);
         //        okJson(new FrontObj().success().setData(list));
@@ -40,22 +48,8 @@ public class FirstController extends Controller
     
     void index2()
     {
+        //输出一个文件
         okFile(new File("c:\\1.jpg"));
-    }
-    
-    void index3()
-    {
-        ok("index3");
-    }
-    
-    void index4()
-    {
-        okJson(MimeMappingMap.mimeMap);
-    }
-    
-    void index5()
-    {
-        okJson(CharEncoding.UTF_8);
     }
     
     public static class Person

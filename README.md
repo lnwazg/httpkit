@@ -1,5 +1,5 @@
 # httpkit
-精巧的java版http服务器
+精巧的java版http服务器。可替代tomcat、jetty，80ms极速启动，颠覆你对java服务器的认知！
 
 ### 使用方法
 
