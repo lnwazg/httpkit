@@ -67,7 +67,7 @@ public class FirstController extends Controller
         ok("abc");
         
         //输出一个json对象
-        okJson(list);
+        //okJson(list);
         
         //        okJson(GsonHelper.gson.toJson(list));
         //        okJson(list);
