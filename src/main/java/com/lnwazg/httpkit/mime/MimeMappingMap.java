@@ -21,7 +21,7 @@ public class MimeMappingMap
     /**
      * 直接渲染、非渲染的内容类型
      */
-    public static String[] directContentTypes = {"image", "video", "pdf", "text", "audio", "json", "xml", "sql"};
+    public static String[] directContentTypes = {"image", "video", "pdf", "text", "audio", "json", "xml", "sql", "javascript"};
     
     public List<MimeMapping> getList()
     {

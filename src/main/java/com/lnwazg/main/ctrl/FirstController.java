@@ -31,10 +31,10 @@ public class FirstController extends Controller
         list.add(person);
         
         //输出abc
-        ok("abc");
+        //        ok("abc");
         
         //输出一个json对象
-        //        okJson(list);
+        okJson(list);
         
         //        okJson(GsonHelper.gson.toJson(list));
         //        okJson(list);

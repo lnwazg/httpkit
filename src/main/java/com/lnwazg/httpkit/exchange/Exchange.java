@@ -3,6 +3,7 @@ package com.lnwazg.httpkit.exchange;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Socket;
 
 /**
  * 交换信息的对象<br>
@@ -24,14 +25,21 @@ public class Exchange implements AutoCloseable
     public final OutputStream out;
     
     /**
+     * 当前的这个socket对象
+     */
+    public final Socket socket;
+    
+    /**
      * 构造函数 
      * @param in 参数输入流
      * @param out 参数输出流
+     * @param socket 
      */
-    public Exchange(InputStream in, OutputStream out)
+    public Exchange(InputStream in, OutputStream out, Socket socket)
     {
         this.in = in;
         this.out = out;
+        this.socket = socket;
     }
     
     @Override

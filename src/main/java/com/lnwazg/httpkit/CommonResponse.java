@@ -5,7 +5,7 @@ import java.util.Map;
 
 import com.lnwazg.httpkit.handler.HttpHandler;
 import com.lnwazg.httpkit.server.HttpServer;
-import com.lnwazg.httpkit.util.Utils;
+import com.lnwazg.httpkit.util.RenderUtils;
 
 /**
  * 通用的几种响应码的封装
@@ -73,8 +73,8 @@ public class CommonResponse
     
     private static HttpHandler code(HttpResponseCode code, String msg)
     {
-        return (reader, writer) -> {
-            Utils.handleMsg(reader, writer, code, msg);
+        return (ioInfo) -> {
+            RenderUtils.renderHtml(ioInfo, code, msg);
         };
     }
 }

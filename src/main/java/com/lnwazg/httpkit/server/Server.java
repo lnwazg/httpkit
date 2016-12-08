@@ -28,25 +28,26 @@ public class Server implements AutoCloseable
         this.handler = handler;
     }
     
-    /**
-     * 等待处理完毕<br>
-     * 核心就是由工厂生产一个处理器，然后由处理器去立刻处理这个生产好的对象
-     * @author nan.li
-     * @throws IOException
-     */
-    public void await()
-        throws IOException
-    {
-        handler.accept(factory.create());
-    }
+    //    /**
+    //     * 等待处理完毕<br>
+    //     * 核心就是由工厂生产一个处理器，然后由处理器去立刻处理这个生产好的对象
+    //     * @author nan.li
+    //     * @throws IOException
+    //     */
+    //    public void await()
+    //        throws IOException
+    //    {
+    //        handler.accept(factory.create());
+    //    }
     
     /**
      * 监听器<br>
      * 主要工厂还没关闭，处理器就要一直循环去处理所有的请求
      * @author nan.li
+     * @param httpServer 
      * @throws IOException
      */
-    public void listen()
+    public void listen(HttpServer httpServer)
     {
         Logs.i("Routing over!");
         new Thread(() -> {
@@ -54,7 +55,7 @@ public class Server implements AutoCloseable
             {
                 while (!isClosed())
                 {
-                    handler.accept(factory.create());
+                    handler.accept(factory.create(), httpServer);
                     //对于现在的广泛普及的宽带连接来说，Keep-Alive也许并不像以前一样有用。web服务器会保持连接若干秒(Apache中默认15秒)，这与提高的性能相比也许会影响性能。
                     //对于单个文件被不断请求的服务(例如图片存放网站)，Keep-Alive可能会极大的影响性能，因为它在文件被请求之后还保持了不必要的连接很长时间。
                 }

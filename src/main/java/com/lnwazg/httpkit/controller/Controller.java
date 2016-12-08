@@ -4,12 +4,12 @@ import java.io.File;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import com.lnwazg.httpkit.HttpResponseCode;
 import com.lnwazg.httpkit.io.HttpReader;
 import com.lnwazg.httpkit.io.HttpWriter;
-import com.lnwazg.httpkit.util.Utils;
+import com.lnwazg.httpkit.io.IOInfo;
+import com.lnwazg.httpkit.util.RenderUtils;
 import com.lnwazg.kit.common.model.FrontObj;
 import com.lnwazg.kit.gson.GsonHelper;
 import com.lnwazg.kit.url.UriParamUtils;
@@ -22,22 +22,26 @@ public class Controller
     /**
      * 线程本地对象
      */
-    private static final ThreadLocal<ImmutablePair<HttpReader, HttpWriter>> THREAD_LOCAL = new ThreadLocal<ImmutablePair<HttpReader, HttpWriter>>();
+    private static final ThreadLocal<IOInfo> THREAD_LOCAL = new ThreadLocal<IOInfo>();
     
-    public void setThreadLocal(HttpReader reader, HttpWriter writer)
+    public void setThreadLocal(IOInfo ioInfo)
     {
-        ImmutablePair<HttpReader, HttpWriter> pair = new ImmutablePair<HttpReader, HttpWriter>(reader, writer);
-        THREAD_LOCAL.set(pair);
+        THREAD_LOCAL.set(ioInfo);
     }
     
     public HttpReader getReader()
     {
-        return THREAD_LOCAL.get().getLeft();
+        return THREAD_LOCAL.get().getReader();
     }
     
     public HttpWriter getWriter()
     {
-        return THREAD_LOCAL.get().getRight();
+        return THREAD_LOCAL.get().getWriter();
+    }
+    
+    public IOInfo getIOInfo()
+    {
+        return THREAD_LOCAL.get();
     }
     
     /**
@@ -68,7 +72,7 @@ public class Controller
      */
     public void ok(String msg)
     {
-        Utils.handleMsg(getReader(), getWriter(), HttpResponseCode.OK, msg);
+        RenderUtils.renderHtml(getIOInfo(), HttpResponseCode.OK, msg);
     }
     
     /**
@@ -78,7 +82,7 @@ public class Controller
      */
     public void okJson(String json)
     {
-        Utils.handleMsg(getReader(), getWriter(), HttpResponseCode.OK, json, "json");
+        RenderUtils.renderMsg(getIOInfo(), HttpResponseCode.OK, json, "json");
     }
     
     /**
@@ -93,7 +97,7 @@ public class Controller
     
     public void okFile(File file)
     {
-        Utils.handleMsg(getReader(), getWriter(), HttpResponseCode.OK, file);
+        RenderUtils.renderFile(getIOInfo(), HttpResponseCode.OK, file);
     }
     
     /**

@@ -1,7 +1,6 @@
 package com.lnwazg.httpkit.handler;
 
-import com.lnwazg.httpkit.io.HttpReader;
-import com.lnwazg.httpkit.io.HttpWriter;
+import com.lnwazg.httpkit.io.IOInfo;
 
 /**
  * HttpHandler
@@ -11,5 +10,5 @@ import com.lnwazg.httpkit.io.HttpWriter;
  */
 public interface HttpHandler
 {
-    public void accept(HttpReader reader, HttpWriter writer);
+    public void accept(IOInfo ioInfo);
 }

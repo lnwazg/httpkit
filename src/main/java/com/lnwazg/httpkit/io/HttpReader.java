@@ -48,6 +48,12 @@ public class HttpReader implements Closeable
     
     private byte[] body;
     
+    /**
+     * 客户端是否支持gzip压缩输出<br>
+     * 默认不支持
+     */
+    private boolean supportGzipOutput;
+    
     public HttpReader(InputStream in)
     {
         this.in = in;
@@ -114,6 +120,11 @@ public class HttpReader implements Closeable
     public Map<String, String> readHeaders()
     {
         return headers;
+    }
+    
+    public boolean isSupportGzipOutput()
+    {
+        return supportGzipOutput;
     }
     
     /**
@@ -183,6 +194,7 @@ public class HttpReader implements Closeable
                 }
                 headers.put(header.substring(0, colon).trim(), header.substring(colon + 1).trim());
             }
+            resolveExtra();
             state = ReadState.BODY;
         }
         catch (Exception e)
@@ -190,6 +202,36 @@ public class HttpReader implements Closeable
             throw new MalformedRequestException("Unable to parse incoming HTTP request.", e);
         }
     }
+    
+    /**
+     * 解析其他的信息
+     * @author nan.li
+     */
+    private void resolveExtra()
+    {
+        //根据reader判断是否需要gzip输出
+        String acceptEncoding = readHeader("Accept-Encoding");
+        if (StringUtils.isNotEmpty(acceptEncoding) && acceptEncoding.indexOf("gzip") != -1)
+        {
+            supportGzipOutput = true;
+        }
+    }
+    
+    //    /**
+    //     * 根据reader判断是否需要gzip输出
+    //     * @author nan.li
+    //     * @param reader
+    //     * @return
+    //     */
+    //    private static boolean isGzipOut(HttpReader reader)
+    //    {
+    //        String acceptEncoding = reader.readHeader("Accept-Encoding");
+    //        if (StringUtils.isNotEmpty(acceptEncoding) && acceptEncoding.indexOf("gzip") != -1)
+    //        {
+    //            return true;
+    //        }
+    //        return false;
+    //    }
     
     /**
      * 完整地读消息体
@@ -245,4 +287,5 @@ public class HttpReader implements Closeable
     {
         StreamUtils.close(reader, in);
     }
+    
 }

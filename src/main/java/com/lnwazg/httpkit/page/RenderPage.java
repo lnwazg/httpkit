@@ -16,10 +16,9 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.lnwazg.httpkit.HttpResponseCode;
-import com.lnwazg.httpkit.io.HttpReader;
-import com.lnwazg.httpkit.io.HttpWriter;
+import com.lnwazg.httpkit.io.IOInfo;
 import com.lnwazg.httpkit.server.HttpServer;
-import com.lnwazg.httpkit.util.Utils;
+import com.lnwazg.httpkit.util.RenderUtils;
 
 /**
  * 页面渲染的工具类
@@ -50,7 +49,7 @@ public class RenderPage
      * @param f
      * @param uri 
      */
-    public static void showDirectory(HttpReader reader, HttpWriter writer, File f, String uri)
+    public static void showDirectory(IOInfo ioInfo, File f, String uri)
     {
         if (f == null || !f.exists() || !f.isDirectory())
         {
@@ -60,16 +59,16 @@ public class RenderPage
         String body = getBody(f, uri);
         String result = StringUtils.replace(templateStr, "${title}", title);
         result = StringUtils.replace(result, "${body}", body);
-        Utils.handleMsg(reader, writer, HttpResponseCode.OK, result);
+        RenderUtils.renderHtml(ioInfo, HttpResponseCode.OK, result);
     }
     
-    public static void showDirectory(HttpReader reader, HttpWriter writer, Map<String, File> docRoutesMap)
+    public static void showDirectory(IOInfo ioInfo, Map<String, File> docRoutesMap)
     {
         String title = "资源目录列表";
-        String body = getBody(docRoutesMap);
+        String body = getDocRoutesRootBody(docRoutesMap);
         String result = StringUtils.replace(templateStr, "${title}", title);
         result = StringUtils.replace(result, "${body}", body);
-        Utils.handleMsg(reader, writer, HttpResponseCode.OK, result);
+        RenderUtils.renderHtml(ioInfo, HttpResponseCode.OK, result);
     }
     
     static Comparator<File> c = new Comparator<File>()
@@ -92,10 +91,9 @@ public class RenderPage
         }
     };
     
-    private static String getBody(Map<String, File> docRoutesMap)
+    private static String getDocRoutesRootBody(Map<String, File> docRoutesMap)
     {
         StringBuilder sb = new StringBuilder();
-        
         Set<String> dirs = docRoutesMap.keySet();
         List<String> list = new ArrayList<>();
         list.addAll(dirs);

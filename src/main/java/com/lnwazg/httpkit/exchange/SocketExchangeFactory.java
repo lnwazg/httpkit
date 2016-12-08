@@ -24,7 +24,7 @@ public class SocketExchangeFactory implements ExchangeFactory
         //while循环在阻塞在这里，直到有一个新的连接到达了，即进行新的处理！
         Socket socket = serverSocket.accept();
         //返回这个新连接的输入流与输出流对象
-        return new Exchange(socket.getInputStream(), socket.getOutputStream())
+        return new Exchange(socket.getInputStream(), socket.getOutputStream(), socket)
         {
             @Override
             public void close()
