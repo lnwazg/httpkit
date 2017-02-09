@@ -100,3 +100,6 @@ public class FirstController extends Controller
 
 ###内嵌的资源浏览器
 ![内嵌的资源浏览器](2.png)
+
+###执行一个controller，输出一个json对象
+![执行一个controller](3.png)
