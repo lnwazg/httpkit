@@ -99,4 +99,4 @@ public class FirstController extends Controller
 ![运行截图](1.png "运行示例")
 
 内嵌的资源浏览器
-!(2.png)
+![内嵌的资源浏览器](2.png)
