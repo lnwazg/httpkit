@@ -51,32 +51,8 @@ public class FirstController extends Controller
 {
     void index()
     {
-        Person person = new Person();
-        person.age = "18";
-        person.name = "hudson";
-        List<Person> list = new ArrayList<>();
-        for (int i = 0; i < 5; i++)
-        {
-            list.add(person);
-        }
-        person = new Person();
-        person.name = getParam("fff");
-        list.add(person);
-        
-        //输出abc。
-        ok("abc");
-        
-        //输出一个json对象。
-        //okJson(list);
-
-        //        okJson(GsonHelper.gson.toJson(list));
-        //        okJson(list);
-        //        okJson(new FrontObj().success().setData(list));
-        //        okJson(success(list));
-        //        okJson(fail(list));
-        //        okJson(fail(list,10002,"转换错误"));
-        //        okJson(fail(10002, "转换错误"));
-        //        okJson(fail(10003));
+        //以json形式输出一个对象
+        okJson(Maps.asMap("name","LiNan","greetings","Hello World!","remark","This is a test controller!"));
     }
     
     void index2()
