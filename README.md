@@ -72,10 +72,10 @@ public class FirstController extends Controller
 ```
 
 ###运行控制台输出：
-![运行截图](1.png "运行示例")
+![运行截图](screenshots/1.png)
 
 ###内嵌的资源浏览器
-![内嵌的资源浏览器](2.png)
+![内嵌的资源浏览器](screenshots/2.png)
 
 ###执行一个controller，输出一个json对象
-![执行一个controller](3.png)
+![执行一个controller](screenshots/3.png)
