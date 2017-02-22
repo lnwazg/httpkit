@@ -1,5 +1,7 @@
 # httpkit
-一个精巧的java版http服务器。可替代tomcat、jetty，80ms极速启动，颠覆你对java服务器的认知！
+一个精巧的java版http服务器。可替代tomcat、jetty，80ms极速启动，颠覆你对java服务器的认知！  
+注意，该项目需要依赖kit子项目！   
+kit项目地址： https://github.com/lnwazg/kit
 
 ### 使用方法
 
