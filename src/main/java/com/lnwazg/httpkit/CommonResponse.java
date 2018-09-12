@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.lnwazg.httpkit.handler.HttpHandler;
-import com.lnwazg.httpkit.server.HttpServer;
 import com.lnwazg.httpkit.util.RenderUtils;
 
 /**
@@ -66,7 +65,7 @@ public class CommonResponse
     {
         if (!cache.containsKey(code))
         {
-            cache.put(code, code(code, String.format("<h1>%s %s. </h1><h3>Powered by %s</h3>", code.value(), code.message(), HttpServer.SERVER_NAME)));
+            cache.put(code, code(code, String.format("<h1>%s %s. </h1><h3>Powered by %s</h3>", code.value(), code.message(), Constants.SERVER_NAME)));
         }
         return cache.get(code);
     }

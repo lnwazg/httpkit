@@ -1,6 +1,7 @@
 package com.lnwazg.httpkit.exchange.exchangehandler;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import com.lnwazg.httpkit.CommonResponse;
 import com.lnwazg.httpkit.exception.MalformedRequestException;
@@ -32,12 +33,21 @@ public class HttpExchangeHandler implements ExchangeHandler
     public void accept(Exchange exchange, HttpServer httpServer)
         throws IOException
     {
-        ExecMgr.cachedExec.execute(() -> {
-            HttpReader reader = new HttpReader(exchange.in);
-            HttpWriter writer = new HttpWriter(exchange.out);
-            IOInfo ioInfo = new IOInfo(reader, writer, exchange.socket, httpServer);
+        //不控制流量，照单全收型，有可能会导致服务器撑爆了
+        //                ExecMgr.cachedExec.execute(() -> {
+        
+        //流量控制的问题，现在也彻底解决！
+        //风控系统，有效防止瞬间积压的请求过多的情况！过多的就直接抛弃！
+        
+        //流量防火墙控制器
+        //可完美应付1w人在线压测！
+        ExecMgr.trafficCtrlExec.execute(() -> {
+            IOInfo ioInfo = null;
             try
             {
+                HttpReader reader = new HttpReader(exchange.in);
+                HttpWriter writer = new HttpWriter(exchange.out);
+                ioInfo = new IOInfo(reader, writer, exchange.socket, httpServer);
                 handler.accept(ioInfo);
             }
             catch (MalformedRequestException e)
@@ -47,6 +57,11 @@ public class HttpExchangeHandler implements ExchangeHandler
             catch (RoutingException e)
             {
                 CommonResponse.notFound().accept(ioInfo);
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                //不支持的编码，那么ioInfo还未来得及初始化，那么就没必要再处理了
+                e.printStackTrace();
             }
             catch (Exception e)
             {

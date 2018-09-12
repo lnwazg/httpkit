@@ -21,8 +21,27 @@
 			<artifactId>kit</artifactId>
 			<version>0.1</version>
 		</dependency>
+		<!-- 字符串模板工具 -->
+		<dependency>
+			<groupId>org.freemarker</groupId>
+			<artifactId>freemarker</artifactId>
+			<version>2.3.25-incubating</version>
+			<optional>true</optional>
+		</dependency>
+		<!-- 对象与xml转换工具 -->
+		<dependency>
+			<groupId>com.thoughtworks.xstream</groupId>
+			<artifactId>xstream</artifactId>
+			<version>1.4.7</version>
+		</dependency>
+		<!-- 可选的myzoo依赖 -->
+		<dependency>
+			<groupId>com.lnwazg</groupId>
+			<artifactId>myzoo-api</artifactId>
+			<version>0.1</version>
+			<optional>true</optional>
+		</dependency>
 	</dependencies>
-
 	<build>
 		<resources>
 			<resource>

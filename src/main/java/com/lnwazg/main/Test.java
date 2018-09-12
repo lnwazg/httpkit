@@ -3,6 +3,7 @@ package com.lnwazg.main;
 import java.io.File;
 import java.io.IOException;
 
+import com.lnwazg.httpkit.Constants;
 import com.lnwazg.httpkit.server.HttpServer;
 
 /**
@@ -20,9 +21,10 @@ public class Test
         HttpServer server = HttpServer.bind(port);
         //            server.setBasePath("root");
         server.setContextPath("root");
-        
         //            server.accept(FirstController.class);
-        server.packageSearchAndInit("com.lnwazg.main.ctrl");
+        //此处设置了之后，访问controller资源的时候，可以以.do结尾
+        server.setControllerSuffix("do");
+        server.packageSearchAndInit("com.lnwazg.main.ctrl", null);
         //        http://127.0.0.1:7777/root/base/index2
         
         //        server.addWatchResourceDirRoute("games", new File("J:\\games"));
@@ -37,10 +39,10 @@ public class Test
         server.addWatchResourceDirRoute("webStatic", new File("O:\\2012\\mavenPrj\\httpkit\\src\\main\\resources\\static"));
         //        O:\2012\mavenPrj\httpkit\src\main\resources\static
         
-        server.addFreemarkerPageDirRoute("web", HttpServer.DEFAULT_WEB_RESOURCE_BASE_PATH);
+        server.addFreemarkerPageDirRoute("web", Constants.DEFAULT_WEB_RESOURCE_BASE_PATH);
         server.addFreemarkerPageDirRoute("web1", "static2/");
         server.addFreemarkerPageDirRoute("web2", "static2/");
-        server.addFreemarkerPageDirRoute("web3", HttpServer.DEFAULT_WEB_RESOURCE_BASE_PATH);
+        server.addFreemarkerPageDirRoute("web3", Constants.DEFAULT_WEB_RESOURCE_BASE_PATH);
         
         //监听在这个端口处
         server.listen();

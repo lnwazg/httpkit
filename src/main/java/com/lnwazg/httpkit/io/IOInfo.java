@@ -1,9 +1,15 @@
 package com.lnwazg.httpkit.io;
 
 import java.net.Socket;
+import java.util.Map;
 
 import com.lnwazg.httpkit.server.HttpServer;
 
+/**
+ * 存储所有的IO信息
+ * @author nan.li
+ * @version 2016年12月22日
+ */
 public class IOInfo
 {
     private HttpReader reader;
@@ -60,5 +66,15 @@ public class IOInfo
     public void setHttpServer(HttpServer httpServer)
     {
         this.httpServer = httpServer;
+    }
+    
+    /**
+     * 前期解析完毕之后，后期增设参数表
+     * @author nan.li
+     * @param extraMap
+     */
+    public void appendExtraRequestParamMap(Map<String, String> extraMap)
+    {
+        reader.appendExtraRequestParamMap(extraMap);
     }
 }

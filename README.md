@@ -1,7 +1,20 @@
 # httpkit
-一个精巧的java版http服务器。可替代tomcat、jetty，80ms极速启动，颠覆你对java服务器的认知！  
-注意，该项目需要依赖kit子项目！   
-kit项目地址： https://github.com/lnwazg/kit
+一个精巧的java版http服务器，可替代tomcat、jetty，80ms极速启动。 
+ 
+- 服务器元信息
+- 精巧、独立，占用资源少，可替代tomcat
+- 80ms极速启动
+- 内置风控处理，防瞬时并发量过大崩溃
+- 可独立jar包运行，一个jar包就是一个网站！
+- 与nginx完美配合
+- 内置简洁方便的http文件服务器
+- 内置自适应扫描的全盘服务器
+- Controller自动扫描，无需显式添加。亦可自定义扫描目录
+- 支持path name param
+- freemarker模板支持
+- 智能跨域处理（属于系统默认的内置过滤器）
+- 内置了强大的过滤器支持，可无限扩展，无尽简化你的开发流程
+- 可支持多端口启动
 
 ### 使用方法
 

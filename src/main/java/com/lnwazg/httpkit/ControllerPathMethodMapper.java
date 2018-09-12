@@ -2,10 +2,15 @@ package com.lnwazg.httpkit;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
-import com.lnwazg.httpkit.controller.Controller;
+import com.lnwazg.httpkit.controller.BaseController;
+import com.lnwazg.httpkit.filter.CtrlFilter;
+import com.lnwazg.httpkit.filter.CtrlFilterChain;
 import com.lnwazg.httpkit.io.IOInfo;
 import com.lnwazg.kit.executor.ExecMgr;
+import com.lnwazg.kit.singleton.B;
 
 /**
  * 映射的Controller类的路由执行器<br>
@@ -16,28 +21,32 @@ import com.lnwazg.kit.executor.ExecMgr;
 public class ControllerPathMethodMapper
 {
     /**
-     * 实际将要被路由到的路径
+     * 实际将要被路由到的全路径
      */
-    private final String path;
-    
-    /**
-     * 该路径将会被调用的方法
-     */
-    private Method method;
+    private final String routingPath;
     
     /**
      * 该路径将会被调用的实体类对象
      */
-    private Controller controller;
+    private BaseController controllerObj;
+    
+    /**
+     * 该路径将会被调用的方法
+     */
+    private Method controllerMethod;
+    
+    private Map<String, String> extraParamMap;
     
     public ControllerPathMethodMapper(String path)
     {
-        this.path = path;
+        this.routingPath = path;
     }
     
-    public String path()
+    public ControllerPathMethodMapper(String path, Method method, BaseController controller)
     {
-        return path;
+        this.routingPath = path;
+        this.controllerObj = controller;
+        this.controllerMethod = method;
     }
     
     /**
@@ -47,15 +56,15 @@ public class ControllerPathMethodMapper
      * @param parent
      * @return
      */
-    public void setParam(Method method, Controller controller)
+    public void setParam(Method method, BaseController controller)
     {
-        this.method = method;
-        //要调用的对象
-        this.controller = controller;
+        this.controllerObj = controller;
+        this.controllerMethod = method;
     }
     
     /**
      * 调用Controller具体的方法，获得一个handler对象
+     * @param extraMap 
      * @param writer 
      * @param reader 
      */
@@ -65,13 +74,22 @@ public class ControllerPathMethodMapper
         ExecMgr.cachedExec.execute(() -> {
             //保证controller类始终只有一份，大大降低了内存的占用量
             //注入线程所需要的参数
-            controller.setThreadLocal(ioInfo);
+            controllerObj.setThreadLocalIoInfo(ioInfo);
+            controllerObj.setThreadLocalPageParamMap(new HashMap<>());
+            //同样，所有的filter也要注入这些信息
+            if (B.g(CtrlFilterChain.class).getFilters().size() > 0)
+            {
+                for (CtrlFilter ctrlFilter : B.g(CtrlFilterChain.class).getFilters())
+                {
+                    ((BaseController)ctrlFilter).setThreadLocalIoInfo(ioInfo);
+                }
+            }
             try
             {
                 //令该方法可以被访问到（即便是私有方法）
-                method.setAccessible(true);
+                controllerMethod.setAccessible(true);
                 //调用该方法
-                method.invoke(controller);
+                controllerMethod.invoke(controllerObj);
             }
             catch (Exception e)
             {
@@ -83,6 +101,16 @@ public class ControllerPathMethodMapper
     @Override
     public String toString()
     {
-        return "Route [path=" + path + ", method=" + method + "]";
+        return "Route [path=" + routingPath + ", method=" + controllerMethod + "]";
+    }
+    
+    public void setExtraParamMap(Map<String, String> paramMap)
+    {
+        this.extraParamMap = paramMap;
+    }
+
+    public String getRoutingPath()
+    {
+        return routingPath;
     }
 }

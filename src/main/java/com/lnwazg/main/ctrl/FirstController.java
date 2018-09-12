@@ -1,11 +1,10 @@
 package com.lnwazg.main.ctrl;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
-import com.lnwazg.httpkit.anno.BasePath;
-import com.lnwazg.httpkit.controller.Controller;
+import com.lnwazg.httpkit.controller.BaseController;
+import com.lnwazg.kit.controllerpattern.Controller;
+import com.lnwazg.kit.map.Maps;
 
 /**
  * 示例controller<br>
@@ -13,29 +12,30 @@ import com.lnwazg.httpkit.controller.Controller;
  * @author nan.li
  * @version 2016年11月30日
  */
-@BasePath("/base")
-public class FirstController extends Controller
+@Controller("/base")
+public class FirstController extends BaseController
 {
     void index()
     {
-        Person person = new Person();
-        person.age = "18";
-        person.name = "hudson";
-        List<Person> list = new ArrayList<>();
-        for (int i = 0; i < 5; i++)
-        {
-            list.add(person);
-        }
-        person = new Person();
-        person.name = getParam("fff");
-        list.add(person);
+//        Person person = new Person();
+//        person.age = "18";
+//        person.name = "hudson";
+//        List<Person> list = new ArrayList<>();
+//        for (int i = 0; i < 2; i++)
+//        {
+//            list.add(person);
+//        }
+//        person = new Person();
+//        person.name = getParam("name");
+//        list.add(person);
+//        //输出abc
+//        //        ok("abc");
+//        //输出一个json对象
+//        okJson(list);
         
-        //输出abc
-        //        ok("abc");
+        okJson(Maps.asMap("name","LiNan","greetings","Hello World!","remark","This is a test controller!"));
         
-        //输出一个json对象
-        okJson(list);
-        
+        //        ok(GsonHelper.gson.toJson(list));
         //        okJson(GsonHelper.gson.toJson(list));
         //        okJson(list);
         //        okJson(new FrontObj().success().setData(list));

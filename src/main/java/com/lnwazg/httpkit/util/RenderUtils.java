@@ -8,6 +8,7 @@ import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -15,18 +16,18 @@ import org.apache.commons.lang3.CharEncoding;
 import org.apache.commons.lang3.StringUtils;
 
 import com.lnwazg.httpkit.CommonResponse;
+import com.lnwazg.httpkit.Constants;
 import com.lnwazg.httpkit.HttpResponseCode;
 import com.lnwazg.httpkit.handler.route.Router;
 import com.lnwazg.httpkit.io.HttpReader;
 import com.lnwazg.httpkit.io.HttpWriter;
 import com.lnwazg.httpkit.io.IOInfo;
-import com.lnwazg.httpkit.mime.MimeMappingMap;
-import com.lnwazg.httpkit.server.HttpServer;
 import com.lnwazg.kit.compress.GzipBytesUtils;
 import com.lnwazg.kit.freemarker.FreeMkKit;
-import com.lnwazg.kit.http.DownloadUtils;
+import com.lnwazg.kit.http.DownloadKit;
 import com.lnwazg.kit.io.StreamUtils;
 import com.lnwazg.kit.map.Maps;
+import com.lnwazg.kit.mime.MimeMappingMap;
 
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -74,7 +75,7 @@ public class RenderUtils
         boolean gzipOutput = reader.isSupportGzipOutput();
         try
         {
-            writer.writeResponseCode(HttpServer.VERSION, code);
+            writer.writeResponseCode(Constants.VERSION, code);
             String contentType = "text/html;charset=utf-8";
             if (StringUtils.isNotEmpty(extension))
             {
@@ -85,7 +86,27 @@ public class RenderUtils
             {
                 writer.writeContentEncoding("gzip");
             }
-            writer.writeServer(HttpServer.SERVER_NAME);
+            writer.writeServer(Constants.SERVER_NAME);
+            
+            //根据启动配置输出额外的响应头
+            Map<String, String> extraResponseHeaders = ioInfo.getHttpServer().getExtraResponseHeaders();
+            if (MapUtils.isNotEmpty(extraResponseHeaders))
+            {
+                for (String key : extraResponseHeaders.keySet())
+                {
+                    writer.writeHeader(key, extraResponseHeaders.get(key));
+                }
+            }
+            //将writer中预输出的内容输出
+            extraResponseHeaders = writer.getExtraResponseHeaders();
+            if (MapUtils.isNotEmpty(extraResponseHeaders))
+            {
+                for (String key : extraResponseHeaders.keySet())
+                {
+                    writer.writeHeader(key, extraResponseHeaders.get(key));
+                }
+            }
+            
             //            writer.writeHeader("Connection", "keep-alive");
             writer.endHeader();
             writer.flush();
@@ -117,7 +138,111 @@ public class RenderUtils
         }
         finally
         {
+            //在此处关闭了连接，那么长连接就无法保持了
+            //也就是说，请求头里面的 Connection: keep-alive 就被无视了
             StreamUtils.close(writer, reader);
+            //实践证明，只有在此处关闭连接，才能正常地向客户端输出响应。也就是说，本架构目前是不支持连接的keep-alive的 
+        }
+    }
+    
+    /**
+     * 渲染输出流
+     * @author nan.li
+     * @param ioInfo
+     * @param code
+     * @param inputStream
+     * @param extension
+     */
+    public static void renderStream(IOInfo ioInfo, HttpResponseCode code, InputStream inputStream, String extension)
+    {
+        byte[] bs;
+        try
+        {
+            //先转为字节码数组，再输出
+            bs = IOUtils.toByteArray(inputStream);
+            renderBytes(ioInfo, code, bs, extension);
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 输出字节码
+     * @author nan.li
+     * @param ioInfo
+     * @param code
+     * @param bytes
+     * @param extension
+     */
+    public static void renderBytes(IOInfo ioInfo, HttpResponseCode code, byte[] bytes, String extension)
+    {
+        HttpReader reader = ioInfo.getReader();
+        HttpWriter writer = ioInfo.getWriter();
+        boolean gzipOutput = reader.isSupportGzipOutput();
+        try
+        {
+            writer.writeResponseCode(Constants.VERSION, code);
+            String contentType = "application/octet-stream";//默认是bin类型的输出MIME
+            if (StringUtils.isNotEmpty(extension))
+            {
+                contentType = String.format("%s;charset=utf-8", MimeMappingMap.mimeMap.get(extension.toLowerCase()));
+            }
+            writer.writeContentType(contentType);
+            if (gzipOutput)
+            {
+                writer.writeContentEncoding("gzip");
+            }
+            writer.writeServer(Constants.SERVER_NAME);
+            //根据启动配置输出额外的响应头
+            Map<String, String> extraResponseHeaders = ioInfo.getHttpServer().getExtraResponseHeaders();
+            if (MapUtils.isNotEmpty(extraResponseHeaders))
+            {
+                for (String key : extraResponseHeaders.keySet())
+                {
+                    writer.writeHeader(key, extraResponseHeaders.get(key));
+                }
+            }
+            //将writer中预输出的内容输出
+            extraResponseHeaders = writer.getExtraResponseHeaders();
+            if (MapUtils.isNotEmpty(extraResponseHeaders))
+            {
+                for (String key : extraResponseHeaders.keySet())
+                {
+                    writer.writeHeader(key, extraResponseHeaders.get(key));
+                }
+            }
+            //            writer.writeHeader("Connection", "keep-alive");
+            writer.endHeader();
+            writer.flush();
+            byte[] bs = bytes;
+            if (gzipOutput)
+            {
+                //采用gzip格式压缩输出
+                bs = GzipBytesUtils.zip(bs);//将字节压缩输出
+                IOUtils.write(bs, writer.out);
+            }
+            else
+            {
+                IOUtils.write(bs, writer.out);
+            }
+        }
+        catch (SocketException e)
+        {
+            //Software caused connection abort: socket write error
+            //忽略该类异常
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            //在此处关闭了连接，那么长连接就无法保持了
+            //也就是说，请求头里面的 Connection: keep-alive 就被无视了
+            StreamUtils.close(writer, reader);
+            //实践证明，只有在此处关闭连接，才能正常地向客户端输出响应。也就是说，本架构目前是不支持连接的keep-alive的 
         }
     }
     
@@ -160,7 +285,7 @@ public class RenderUtils
         GzipCompressorOutputStream gzipCompressorOutputStream = null;
         try
         {
-            writer.writeResponseCode(HttpServer.VERSION, code);
+            writer.writeResponseCode(Constants.VERSION, code);
             
             //默认情况下，将其作为文本类型返回（匹配不到MIME信息的时候）
             //对于chrome浏览器，其会正确判断实际类型的！所以，text/plain是最合适的类型！
@@ -187,7 +312,7 @@ public class RenderUtils
                 //一旦加上了下载标识符，那么就无法在线预览了，只能作为附件进行下载了！
                 String userAgent = reader.readHeader("User-Agent");
                 //给响应头输出下载文件的信息，方便浏览器客户端识别保存
-                String contentDisposition = DownloadUtils.getContentDispositionByNameAndUserAgent(fileName, userAgent);
+                String contentDisposition = DownloadKit.getContentDispositionByNameAndUserAgent(fileName, userAgent);
                 if (StringUtils.isNotEmpty(contentDisposition))
                 {
                     writer.writeHeader("content-disposition", contentDisposition);
@@ -198,7 +323,7 @@ public class RenderUtils
             {
                 writer.writeContentEncoding("gzip");
             }
-            writer.writeServer(HttpServer.SERVER_NAME);
+            writer.writeServer(Constants.SERVER_NAME);
             writer.endHeader();
             writer.flush();
             
@@ -216,6 +341,10 @@ public class RenderUtils
             {
                 IOUtils.copy(fileInputStream, writer.out);
             }
+        }
+        catch (SocketException e)
+        {
+            //ignore
         }
         catch (IOException e)
         {
@@ -248,7 +377,16 @@ public class RenderUtils
         GzipCompressorOutputStream gzipCompressorOutputStream = null;
         try
         {
-            writer.writeResponseCode(HttpServer.VERSION, code);
+            writer.writeResponseCode(Constants.VERSION, code);
+            
+            //add by linan for CORS
+            writer.writeHeader("Access-Control-Allow-Credentials", true);
+            String origin = reader.readHeader("Origin");
+            if (StringUtils.isNotEmpty(origin))
+            {
+                writer.writeHeader("Access-Control-Allow-Origin", origin);
+            }
+            
             //默认情况下，将其作为文本类型返回（匹配不到MIME信息的时候）
             //对于chrome浏览器，其会正确判断实际类型的！所以，text/plain是最合适的类型！
             String contentType = "text/plain;charset=utf-8";
@@ -273,7 +411,7 @@ public class RenderUtils
                 //一旦加上了下载标识符，那么就无法在线预览了，只能作为附件进行下载了！
                 String userAgent = reader.readHeader("User-Agent");
                 //给响应头输出下载文件的信息，方便浏览器客户端识别保存
-                String contentDisposition = DownloadUtils.getContentDispositionByNameAndUserAgent(fileName, userAgent);
+                String contentDisposition = DownloadKit.getContentDispositionByNameAndUserAgent(fileName, userAgent);
                 if (StringUtils.isNotEmpty(contentDisposition))
                 {
                     writer.writeHeader("content-disposition", contentDisposition);
@@ -283,7 +421,7 @@ public class RenderUtils
             {
                 writer.writeContentEncoding("gzip");
             }
-            writer.writeServer(HttpServer.SERVER_NAME);
+            writer.writeServer(Constants.SERVER_NAME);
             writer.endHeader();
             writer.flush();
             
@@ -335,10 +473,24 @@ public class RenderUtils
      * @param basePath      /root/web/
      * @param resourcePath  static/
      * @param subPath       page/index.ftl
-     * @param fileName      index.ftl
      * @throws TemplateException 
      */
-    public static void renderFtl(IOInfo ioInfo, HttpResponseCode code, String basePath, String resourcePath, String subPath, String fileName)
+    public static void renderFtl(IOInfo ioInfo, HttpResponseCode code, String basePath, String resourcePath, String subPath)
+    {
+        renderFtl(ioInfo, code, basePath, resourcePath, subPath, null);
+    }
+    
+    /**
+     * 渲染ftl文件
+     * @author nan.li
+     * @param ioInfo
+     * @param code
+     * @param basePath      /root/web/
+     * @param resourcePath  static/
+     * @param subPath       page/index.ftl
+     * @param extraParamMap 额外的参数表
+     */
+    public static void renderFtl(IOInfo ioInfo, HttpResponseCode code, String basePath, String resourcePath, String subPath, Map<String, Object> extraParamMap)
     {
         //获取Freemarker配置对象
         String key = basePath;
@@ -354,12 +506,26 @@ public class RenderUtils
             template = configuration.getTemplate(subPath, CharEncoding.UTF_8);
             //公共参数
             //这个参数不能从缓存中获取，因为ioInfo.getSocket().getLocalAddress().getHostName()是动态变化的！
-            Map<String, Object> map = Maps.asMap("base", String.format("http://%s:%d%s", ioInfo.getSocket().getLocalAddress().getHostName(), ioInfo.getHttpServer().getPort(), basePath));
+            //            Map<String, Object> map = Maps.asMap("base",
+            //                String.format("http://%s:%d%s", ioInfo.getSocket().getLocalAddress().getHostName(), ioInfo.getHttpServer().getPort(), basePath));
+            //            Map<String, Object> map = Maps.asMap("base",
+            //                String.format("http://%s:%d%s", ioInfo.getSocket().getInetAddress().getHostAddress(), ioInfo.getHttpServer().getPort(), basePath));
+            
+            //从请求头Host参数中获取浏览器访问的真实地址
+            Map<String, Object> map = Maps.asMap("base",
+                String.format("http://%s%s", ioInfo.getReader().getHeader("Host"), basePath));
+                
+            //如果额外参数表非空，则加上额外参数
+            if (Maps.isNotEmpty(extraParamMap))
+            {
+                map.putAll(extraParamMap);
+            }
+            
             //进行参数转换
             String msg = FreeMkKit.format(template, map);
             if (StringUtils.isNotEmpty(template.toString()))
             {
-                //如果模板非空
+                //如果模板为空
                 if (StringUtils.isEmpty(msg))
                 {
                     //转换异常，则通知内部服务器异常
@@ -396,9 +562,9 @@ public class RenderUtils
         HttpWriter writer = ioInfo.getWriter();
         try
         {
-            writer.writeResponseCode(HttpServer.VERSION, HttpResponseCode.MOVED_PERMANENTLY);
+            writer.writeResponseCode(Constants.VERSION, HttpResponseCode.MOVED_PERMANENTLY);
             writer.writeHeader("Location", location);
-            writer.writeServer(HttpServer.SERVER_NAME);
+            writer.writeServer(Constants.SERVER_NAME);
             writer.endHeader();
             writer.flush();
         }
@@ -414,4 +580,5 @@ public class RenderUtils
             StreamUtils.close(writer);
         }
     }
+    
 }

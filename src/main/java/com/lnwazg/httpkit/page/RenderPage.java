@@ -56,7 +56,7 @@ public class RenderPage
             return;
         }
         String title = f.getName();
-        String body = getBody(f, uri);
+        String body = getBody(f, uri, ioInfo.getHttpServer());
         String result = StringUtils.replace(templateStr, "${title}", title);
         result = StringUtils.replace(result, "${body}", body);
         RenderUtils.renderHtml(ioInfo, HttpResponseCode.OK, result);
@@ -65,7 +65,7 @@ public class RenderPage
     public static void showDirectory(IOInfo ioInfo, Map<String, File> docRoutesMap)
     {
         String title = "资源目录列表";
-        String body = getDocRoutesRootBody(docRoutesMap);
+        String body = getDocRoutesRootBody(docRoutesMap, ioInfo.getHttpServer());
         String result = StringUtils.replace(templateStr, "${title}", title);
         result = StringUtils.replace(result, "${body}", body);
         RenderUtils.renderHtml(ioInfo, HttpResponseCode.OK, result);
@@ -91,7 +91,7 @@ public class RenderPage
         }
     };
     
-    private static String getDocRoutesRootBody(Map<String, File> docRoutesMap)
+    private static String getDocRoutesRootBody(Map<String, File> docRoutesMap, HttpServer httpServer)
     {
         StringBuilder sb = new StringBuilder();
         Set<String> dirs = docRoutesMap.keySet();
@@ -100,7 +100,7 @@ public class RenderPage
         Collections.sort(list, c2);
         for (String dir : list)
         {
-            sb.append(String.format("<a href=\"%s/\"><b><i>%s/</i></b></a><br>\r\n", dir, StringUtils.removeStart(dir, HttpServer.getBasePath() + "/")));
+            sb.append(String.format("<a href=\"%s/\"><b><i>%s/</i></b></a><br>\r\n", dir, StringUtils.removeStart(dir, httpServer.getBasePath() + "/")));
         }
         return sb.toString();
     }
@@ -111,9 +111,9 @@ public class RenderPage
      * @param uri
      * @return
      */
-    private static boolean matchRoot(String uri)
+    private static boolean matchRoot(String uri, HttpServer httpServer)
     {
-        Pattern pattern = Pattern.compile("^" + HttpServer.getBasePath() + "/\\w+/$");
+        Pattern pattern = Pattern.compile("^" + httpServer.getBasePath() + "/\\w+/$");
         //        System.out.println(pattern);
         Matcher matcher = pattern.matcher(uri);
         return matcher.matches();
@@ -133,7 +133,7 @@ public class RenderPage
      * @param uri 
      * @return
      */
-    private static String getBody(File f, String uri)
+    private static String getBody(File f, String uri, HttpServer httpServer)
     {
         //        <a href="StarCraft/">StarCraft/</a>
         //        <br>
@@ -143,9 +143,9 @@ public class RenderPage
         StringBuilder sb = new StringBuilder();
         String toUpper = "..";
         String toUpperUrl = "../";
-        if (matchRoot(uri))
+        if (matchRoot(uri, httpServer))
         {
-            toUpperUrl = String.format("%s/list", HttpServer.getBasePath());
+            toUpperUrl = String.format("%s/list", httpServer.getBasePath());
         }
         sb.append(String.format("<a href=\"%s\"><b><i>%s</i></b></a><br>\r\n", toUpperUrl, toUpper));
         

@@ -4,10 +4,15 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.lang3.CharEncoding;
 
 import com.lnwazg.httpkit.HttpResponseCode;
 
@@ -33,8 +38,9 @@ public class HttpWriter extends BufferedWriter
     public final OutputStream out;
     
     public HttpWriter(OutputStream out)
+        throws UnsupportedEncodingException
     {
-        super(new OutputStreamWriter(out));
+        super(new OutputStreamWriter(out, CharEncoding.UTF_8));
         this.out = out;
     }
     
@@ -65,13 +71,15 @@ public class HttpWriter extends BufferedWriter
     public void writeExpiration(Instant instant)
         throws IOException
     {
-        writeHeader(HttpWriter.EXPIRES, instant == null ? "Never" : DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.ofInstant(instant, ZoneId.of("GMT"))));
+        writeHeader(HttpWriter.EXPIRES,
+            instant == null ? "Never" : DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.ofInstant(instant, ZoneId.of("GMT"))));
     }
     
     public void writeLastModified(Instant instant)
         throws IOException
     {
-        writeHeader(HttpWriter.LAST_MODIFIED, instant == null ? "Never" : DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.ofInstant(instant, ZoneId.of("GMT"))));
+        writeHeader(HttpWriter.LAST_MODIFIED,
+            instant == null ? "Never" : DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.ofInstant(instant, ZoneId.of("GMT"))));
     }
     
     public void writeServer(String server)
@@ -115,5 +123,26 @@ public class HttpWriter extends BufferedWriter
         throws IOException
     {
         write("\r\n");
+    }
+    
+    /**
+     * 额外的响应头信息表
+     */
+    Map<String, String> extraResponseHeaders = new HashMap<>();
+    
+    /**
+     * 预输出消息体
+     * @author nan.li
+     * @param key
+     * @param value
+     */
+    public void addHeaderPre(String key, String value)
+    {
+        this.extraResponseHeaders.put(key, value);
+    }
+    
+    public Map<String, String> getExtraResponseHeaders()
+    {
+        return extraResponseHeaders;
     }
 }
