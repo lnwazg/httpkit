@@ -13,6 +13,7 @@
 		<jdk.version>1.8</jdk.version>
 		<charset.encoding>UTF-8</charset.encoding>
 		<servlet.version>3.0.1</servlet.version>
+		<maven.test.skip>true</maven.test.skip>
 	</properties>
 
 	<dependencies>
