@@ -73,4 +73,5 @@
 			</plugin>
 		</plugins>
 	</build>
+	<description>通用网络基础工具包</description>
 </project>
