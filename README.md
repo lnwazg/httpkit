@@ -1,6 +1,6 @@
 # httpkit
-一个精巧的java版http服务器，可替代tomcat、jetty，80ms极速启动。 
- 
+一个精巧的java版http服务器，可替代tomcat、jetty，80ms极速启动。
+
 - 服务器元信息
 - 精巧、独立，占用资源少，可替代tomcat
 - 80ms极速启动
@@ -69,24 +69,24 @@ public class FirstController extends Controller
         //以json形式输出一个对象
         okJson(Maps.asMap("name","LiNan","greetings","Hello World!","remark","This is a test controller!"));
     }
-    
+
     void index2()
     {
         //输出一个文件
         okFile(new File("c:\\1.jpg"));
     }
-    
+
     public static class Person
     {
         String name;
-        
+
         String age;
     }
 }
 
 ```
 
-### 运行控制台输出： 
+### 运行控制台输出：
 ![运行截图](screenshots/1.png)
 
 ### 内嵌的资源浏览器
@@ -94,3 +94,7 @@ public class FirstController extends Controller
 
 ### 执行一个controller，输出一个json对象
 ![执行一个controller](screenshots/3.png)
+
+
+### 远期计划：  
+- 现有框架为BIO模式，规划整合NIO模式
