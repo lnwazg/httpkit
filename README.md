@@ -96,7 +96,7 @@ public class FirstController extends Controller
 ![执行一个controller](screenshots/3.png)
 
 ### 近期计划
-- 分离出不必要的依赖，降低项目的依赖文件数量	
+- 强化文档，降低入门难度
 
 ### 远期计划：  
 - 现有框架为BIO模式，规划整合NIO模式
