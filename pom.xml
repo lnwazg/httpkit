@@ -36,12 +36,12 @@
 			<version>1.4.7</version>
 		</dependency>
 		<!-- 可选的myzoo依赖 -->
-		<dependency>
+<!-- 		<dependency>
 			<groupId>com.lnwazg</groupId>
 			<artifactId>myzoo-api</artifactId>
 			<version>0.1</version>
 			<optional>true</optional>
-		</dependency>
+		</dependency> -->
 	</dependencies>
 	<build>
 		<resources>

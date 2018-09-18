@@ -31,7 +31,7 @@ import com.lnwazg.kit.map.Maps;
 import com.lnwazg.kit.reflect.ClassKit;
 import com.lnwazg.kit.security.SecurityUtils;
 import com.lnwazg.kit.singleton.B;
-import com.lnwazg.myzoo.framework.MyZooClient;
+//import com.lnwazg.myzoo.framework.MyZooClient;
 
 /**
  * HttpServer对象<br>
@@ -177,7 +177,8 @@ public class HttpServer extends Server
         {
             Class.forName("com.lnwazg.myzoo.framework.MyZooClient");
             Logs.i("检测到myzoo-api依赖库，开始检测加载myzoo配置文件...");
-            myZooInitSuccess = MyZooClient.initDefaultConfig();
+            //            myZooInitSuccess = MyZooClient.initDefaultConfig();
+            myZooInitSuccess = (boolean)ClassKit.invokeMethod("com.lnwazg.myzoo.framework.MyZooClient", "initDefaultConfig");
             if (myZooInitSuccess)
             {
                 //启动的时候，取出一些节点的基本信息
@@ -187,7 +188,8 @@ public class HttpServer extends Server
                 Map<String, String> map = Maps.asStrMap("node", nodeName, "group", groupName, "server", server, "port", port + "");
                 //追加额外的信息
                 appendHttpServiceList(map);
-                MyZooClient.registerService(map);
+                //                MyZooClient.registerService(map);
+                ClassKit.invokeMethod("com.lnwazg.myzoo.framework.MyZooClient", "registerService", map);
             }
         }
         catch (ClassNotFoundException e)
@@ -212,7 +214,8 @@ public class HttpServer extends Server
                 //向myzookeeper注册mq服务
                 Map<String, String> map = Maps.asStrMap("node", nodeName, "group", groupName, "server", server, "port", port + "");
                 //追加额外的信息
-                MyZooClient.unregisterService(map);
+                //                MyZooClient.unregisterService(map);
+                ClassKit.invokeMethod("com.lnwazg.myzoo.framework.MyZooClient", "unregisterService", map);
             }
         }
         catch (Exception e)
