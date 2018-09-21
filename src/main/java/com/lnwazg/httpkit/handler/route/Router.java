@@ -37,6 +37,7 @@ import com.lnwazg.kit.http.url.UriParamUtils;
 import com.lnwazg.kit.log.Logs;
 import com.lnwazg.kit.map.Maps;
 import com.lnwazg.kit.singleton.B;
+import com.lnwazg.kit.str.UrlKit;
 
 /**
  * 路由对象<br>
@@ -98,10 +99,13 @@ public class Router implements HttpHandler
             //找到路径      /root/base/index?fff=4343&bbb=6666
             if (StringUtils.isNotEmpty(uri))
             {
+                //多斜杠兼容
+                //例如将： http://127.0.0.1:8080/////__info__ 自动翻译成  http://127.0.0.1:8080/__info__
+                uri = UrlKit.cleanUri(uri);
+                
                 //此处的处理含有几个优先级，因此可能会有些许性能的损失！但是无妨，因为性能损失换来了系统服务弹性的提升！
                 //1.优先从routesMap中查找     
                 //找到那个路由处理器对象，即可获得要调用的类对象以及方法，还有调用参数
-                
                 uri = UriParamUtils.removeParams(uri);//首先先做去除参数的操作
                 ImmutablePair<ControllerPathMethodMapper, Map<String, String>> pair = findFromControllerMap(uri);
                 if (pair != null)
