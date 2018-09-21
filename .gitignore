@@ -1,7 +1,9 @@
-
 target
 build
+bin
 .settings
 .project
 .classpath
 .DS_Store
+.idea
+.gitattributes
