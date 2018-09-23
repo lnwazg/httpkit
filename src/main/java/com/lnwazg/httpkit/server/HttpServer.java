@@ -73,7 +73,7 @@ public class HttpServer extends Server
      */
     private String[] searchDisks =
         {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"};
-        
+    
     /**
      * 是否初始化过FreeMarker的root目录<br>
      * 仅需初始化一次即可
@@ -388,8 +388,9 @@ public class HttpServer extends Server
     }
     
     /**
-     * 初始化过滤器链条以及过滤器
-     * @author lnwazg@126.com
+     * 自适应加载过滤器配置类列表<br>
+     * 首先尝试从配置文件：filters.cfg中加载，若无配置文件，则使用系统内置的默认的过滤器列表
+     * @return
      */
     public CtrlFilterChain initFilterConfigs()
     {
@@ -410,6 +411,26 @@ public class HttpServer extends Server
                 //跨域过滤器
                 classNameList.add("com.lnwazg.httpkit.filter.common.CORSFilter");
             }
+            return initFilterConfigs(classNameList);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
+   
+    /**
+     * 根据指定的类名列表，初始化过滤器配置<br>
+     * 从上到下有序加载
+     * @param classNameList
+     * @return
+     */
+    public CtrlFilterChain initFilterConfigs(List<String> classNameList)
+    {
+        try
+        {
             //过滤器类列表
             List<Class<CtrlFilter>> filterClassList = new ArrayList<>();
             if (classNameList != null && classNameList.size() > 0)
@@ -433,7 +454,7 @@ public class HttpServer extends Server
                         }
                         else
                         {
-                            System.out.println(String.format("无法加载类: %s, 请检查类路径是否写错？", trimed));
+                            System.err.println(String.format("无法加载类: %s, 请检查类路径是否写错？", trimed));
                             continue;
                         }
                     }
@@ -455,10 +476,6 @@ public class HttpServer extends Server
                 }
             }
             return ctrlFilterChain;
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
         catch (ClassNotFoundException e)
         {
