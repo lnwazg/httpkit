@@ -221,6 +221,8 @@ public class HttpReader implements Closeable
      */
     private void readSignatureFully()
     {
+        // POST /card/yyy.do?userId=2 HTTP/1.1
+        // GET  /card/xxx.do?userId=1 HTTP/1.1
         if (state != ReadState.BEGIN)
         {
             return;
@@ -228,22 +230,16 @@ public class HttpReader implements Closeable
         try
         {
             String line = reader.readLine();
-            //POST /card/viewCardByUserId.do?userId=2 HTTP/1.1
-            // GET /card/viewCardByUserId.do?userId=1 HTTP/1.1
-            
             Logs.i(String.format("Receive request: %s", line));
-            
             if (StringUtils.isEmpty(line))
             {
                 return;
             }
             int firstIndex = line.indexOf(' ');
             int secondIndex = line.indexOf(' ', firstIndex + 1);
-            
             this.requestType = line.substring(0, firstIndex).trim();
             this.uri = line.substring(firstIndex + 1, secondIndex).trim();
             this.version = line.substring(secondIndex + 1).trim();
-            
             state = ReadState.HEADERS;
         }
         catch (Exception e)
