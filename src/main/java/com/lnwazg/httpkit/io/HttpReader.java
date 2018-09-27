@@ -47,11 +47,6 @@ public class HttpReader implements Closeable
     public final BufferedReader reader;
     
     /**
-     * 当前请求正在被解析的进度状态
-     */
-    private ReadState state;
-    
-    /**
      * POST GET
      */
     private String requestType;
@@ -118,16 +113,21 @@ public class HttpReader implements Closeable
     {
         this.in = in;
         this.reader = new BufferedReader(new InputStreamReader(in, CharEncoding.UTF_8));
-        this.state = ReadState.BEGIN;
         //依次从头读到尾
         //1.读消息签名
-        readSignatureFully();
-        //2.读消息头
-        readHeadersFully();
-        //3.读消息体
-        readBodyFully();
-        //解析其他的额外信息 
-        resolveExtraInfo();
+        if (readSignatureFully())
+        {
+            //2.读消息头
+            if (readHeadersFully())
+            {
+                //3.读消息体
+                if (readBodyFully())
+                {
+                    //解析其他的额外信息 
+                    resolveExtraInfo();
+                }
+            }
+        }
     }
     
     /**
@@ -219,28 +219,24 @@ public class HttpReader implements Closeable
      * 包括：requestType uri version信息
      * @author lnwazg@126.com
      */
-    private void readSignatureFully()
+    private boolean readSignatureFully()
     {
-        // POST /card/yyy.do?userId=2 HTTP/1.1
-        // GET  /card/xxx.do?userId=1 HTTP/1.1
-        if (state != ReadState.BEGIN)
-        {
-            return;
-        }
+        // POST /path/to/call.do?param=value HTTP/1.1
         try
         {
             String line = reader.readLine();
             Logs.i(String.format("Receive request: %s", line));
             if (StringUtils.isEmpty(line))
             {
-                return;
+                return false;
             }
-            int firstIndex = line.indexOf(' ');
-            int secondIndex = line.indexOf(' ', firstIndex + 1);
-            this.requestType = line.substring(0, firstIndex).trim();
-            this.uri = line.substring(firstIndex + 1, secondIndex).trim();
-            this.version = line.substring(secondIndex + 1).trim();
-            state = ReadState.HEADERS;
+            //这样的写法实测下来性能竟然是最高的！
+            int firstBlankIndex = line.indexOf(' ');
+            int secondBlankIndex = line.indexOf(' ', firstBlankIndex + 1);
+            this.requestType = line.substring(0, firstBlankIndex).trim();
+            this.uri = line.substring(firstBlankIndex + 1, secondBlankIndex).trim();
+            this.version = line.substring(secondBlankIndex + 1).trim();
+            return true;
         }
         catch (Exception e)
         {
@@ -252,7 +248,7 @@ public class HttpReader implements Closeable
      * 完整地读消息头
      * @author lnwazg@126.com
      */
-    private void readHeadersFully()
+    private boolean readHeadersFully()
     {
         //完整的请求头格式如下：
         //[I] Host: 127.0.0.1
@@ -264,10 +260,6 @@ public class HttpReader implements Closeable
         //[I] User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36
         //[I] Accept-Encoding: gzip, deflate, sdch
         //[I] Accept-Language: zh-CN,zh;q=0.8,en;q=0.6,ja;q=0.4
-        if (state != ReadState.HEADERS)
-        {
-            return;
-        }
         try
         {
             String header;
@@ -285,7 +277,7 @@ public class HttpReader implements Closeable
                 }
                 headerMap.put(header.substring(0, colon).trim(), header.substring(colon + 1).trim());
             }
-            state = ReadState.BODY;
+            return true;
         }
         catch (Exception e)
         {
@@ -297,7 +289,7 @@ public class HttpReader implements Closeable
      * 对消息头进一步分析
      * @author nan.li
      */
-    private void resolveExtraInfo()
+    private boolean resolveExtraInfo()
     {
         //1.根据reader判断是否需要gzip输出
         String acceptEncoding = getHeader("Accept-Encoding");
@@ -305,10 +297,9 @@ public class HttpReader implements Closeable
         {
             supportGzipOutput = true;
         }
-        
         //2.解析cookie
         String cookies = getHeader("Cookie");
-        //aaa=yyyy; bbb=zzz
+        // aaa=yyyy; bbb=zzz
         if (StringUtils.isNotEmpty(cookies))
         {
             cookies = cookies.trim();
@@ -342,7 +333,6 @@ public class HttpReader implements Closeable
             Map<String, String> ret = UriParamUtils.resolveUrlParamMap(uri);
             //默认就采用url里面的参数表
             paramMap = ret;
-            
             if (HttpReader.POST.equals(getRequestType()))
             {
                 String contentType = getHeader("Content-Type");
@@ -380,8 +370,8 @@ public class HttpReader implements Closeable
                     }
                 }
             }
-            
         }
+        return true;
     }
     
     public Map<String, String> getCookieMap()
@@ -408,13 +398,8 @@ public class HttpReader implements Closeable
      * 完整地读消息体
      * @author lnwazg@126.com
      */
-    private void readBodyFully()
+    private boolean readBodyFully()
     {
-        if (state != ReadState.BODY)
-        {
-            return;
-        }
-        
         //典型的一个post请求格式如下：
         //POST /card/viewCardByUserId.do HTTP/1.1
         //Host: 127.0.0.1
@@ -461,36 +446,13 @@ public class HttpReader implements Closeable
                         e.printStackTrace();
                     }
                 }
-                //TODO  else 针对contentType为application/json等非标准形式的参数解析，可以留待后续扩充。 当然也可以同样解析为字符串，然后留待后续应用层进行解析
-                //TODO  else multipart  文件上传的格式解析。可能要解析成字节流数组。以后再解析
+                //else 针对contentType为application/json等非标准形式的参数解析，可以留待后续扩充。
+                //当然也可以同样解析为字符串，然后留待后续应用层进行解析
+                //else multipart  文件上传的格式解析。可能要解析成字节流数组。
+                //以后再解析
             }
         }
-        this.state = ReadState.END;
-    }
-    
-    /**
-     * 阅读状态
-     * @author lnwazg@126.com
-     * @version 2016年11月26日
-     */
-    private static enum ReadState
-    {
-        /**
-         * 开始读取
-         */
-        BEGIN,
-        /**
-        * 消息头
-        */
-        HEADERS,
-        /**
-         * 消息体
-         */
-        BODY,
-        /**
-         * 读取完毕
-         */
-        END
+        return true;
     }
     
     @Override
@@ -499,5 +461,4 @@ public class HttpReader implements Closeable
     {
         StreamUtils.close(reader, in);
     }
-    
 }
