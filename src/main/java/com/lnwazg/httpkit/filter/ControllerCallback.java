@@ -7,5 +7,10 @@ package com.lnwazg.httpkit.filter;
  */
 public interface ControllerCallback
 {
-    void call();
+    /**
+     * 回调函数
+     * @author nan.li
+     * @return
+     */
+    Object call();
 }

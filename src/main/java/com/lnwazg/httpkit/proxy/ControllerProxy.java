@@ -4,6 +4,8 @@ import java.lang.reflect.Method;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import com.lnwazg.httpkit.anno.JsonResponse;
+import com.lnwazg.httpkit.anno.XmlResponse;
 import com.lnwazg.httpkit.controller.BaseController;
 import com.lnwazg.httpkit.filter.ControllerCallback;
 import com.lnwazg.httpkit.filter.CtrlFilter;
@@ -43,6 +45,11 @@ public class ControllerProxy
         
         //该controller自有方法（非继承过来的方法）
         Method[] methods = clazz.getDeclaredMethods();
+        //是否xml格式的响应
+        boolean classXmlResponse = clazz.isAnnotationPresent(XmlResponse.class);
+        //是否json格式的响应
+        boolean classJsonResponse = clazz.isAnnotationPresent(JsonResponse.class);
+        
         //否则，为其生成动态代理实例
         MethodInterceptor methodInterceptor = new MethodInterceptor()
         {
@@ -63,6 +70,11 @@ public class ControllerProxy
                 }
                 else
                 {
+                    //是否xml格式的响应
+                    boolean methodXmlResponse = method.isAnnotationPresent(XmlResponse.class);
+                    //是否json格式的响应
+                    boolean methodJsonResponse = method.isAnnotationPresent(JsonResponse.class);
+                    
                     //自有方法
                     //Logs.i(String.format("开始用过滤器代理自有方法: %s", method.getName()));
                     //依次调用过滤器的链子，达成目的即可
@@ -70,25 +82,84 @@ public class ControllerProxy
                     ctrlFilterChain.setCallback(new ControllerCallback()
                     {
                         @Override
-                        public void call()
+                        public Object call()
                         {
+                            //最后调用Controller的方法
+                            
+                            Object returnObj = null;
                             try
                             {
-                                //最后调用Controller的方法
-                                proxy.invokeSuper(obj, args);
+                                returnObj = proxy.invokeSuper(obj, args);
+                                
+                                //方法级注解优先于类级别注解
+                                if (methodXmlResponse)
+                                {
+                                    //将返回对象转换成xml输出
+                                    ((BaseController)obj).okXml(returnObj);
+                                }
+                                else if (methodJsonResponse)
+                                {
+                                    //将返回对象转换成json输出
+                                    ((BaseController)obj).okJson(returnObj);
+                                }
+                                //类级别注解
+                                else if (classXmlResponse)
+                                {
+                                    //将返回对象转换成xml输出
+                                    ((BaseController)obj).okXml(returnObj);
+                                }
+                                else if (classJsonResponse)
+                                {
+                                    //将返回对象转换成json输出
+                                    ((BaseController)obj).okJson(returnObj);
+                                }
+                                //无注解
+                                else
+                                {
+                                    //原方法返回void，已经在代码里自行做了输出，无须二次干预
+                                }
                             }
                             catch (Throwable e)
                             {
                                 e.printStackTrace();
+                                
+                                //方法级注解优先于类级别注解
+                                if (methodXmlResponse)
+                                {
+                                    //将返回对象转换成xml输出
+                                    ((BaseController)obj).okXml(e.getMessage());
+                                }
+                                else if (methodJsonResponse)
+                                {
+                                    //将返回对象转换成json输出
+                                    ((BaseController)obj).okJson(e.getMessage());
+                                }
+                                //类级别注解
+                                else if (classXmlResponse)
+                                {
+                                    //将返回对象转换成xml输出
+                                    ((BaseController)obj).okXml(e.getMessage());
+                                }
+                                else if (classJsonResponse)
+                                {
+                                    //将返回对象转换成json输出
+                                    ((BaseController)obj).okJson(e.getMessage());
+                                }
+                                //无注解
+                                else
+                                {
+                                    //原方法返回void，已经在代码里自行做了输出，无须二次干预
+                                }
                             }
+                            return returnObj;
                         }
                     });
-                    
                     //取出第0个过滤器
                     CtrlFilter ctrlFilter = ctrlFilterChain.getFilters().get(0);
                     //开启过滤模式（责任链模式）
                     ctrlFilter.doFilter(ctrlFilterChain);
-                    return null;
+                    //返回过滤器链的最终调用结果
+                    return ctrlFilterChain.getResult();
                 }
             }
         };

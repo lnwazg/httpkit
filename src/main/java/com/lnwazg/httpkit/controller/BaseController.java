@@ -22,6 +22,7 @@ import com.lnwazg.kit.common.model.FrontObj;
 import com.lnwazg.kit.gson.GsonKit;
 import com.lnwazg.kit.io.StreamUtils;
 import com.lnwazg.kit.log.Logs;
+import com.lnwazg.kit.xml.xstream.XStreamKit;
 
 /**
  * Controller的基础类
@@ -397,6 +398,16 @@ public class BaseController
     }
     
     /**
+     * xml形式的响应
+     * @author nan.li
+     * @param xml
+     */
+    public void okXml(String xml)
+    {
+        RenderUtils.renderMsg(getIOInfo(), HttpResponseCode.OK, xml, "xml");
+    }
+    
+    /**
      * 将对象转换成JSON形式的响应
      * @author lnwazg@126.com
      * @param obj
@@ -404,6 +415,25 @@ public class BaseController
     public void okJson(Object obj)
     {
         okJson(GsonKit.gson.toJson(obj));
+    }
+    
+    /**
+     * xml形式的响应
+     * @author nan.li
+     * @param obj
+     */
+    public void okXml(Object obj)
+    {
+        okXml(XStreamKit.parseObject2Xml(obj));
+    }
+    
+    /**
+     * 输出一条XML形式的响应,，默认成功的
+     * @author nan.li
+     */
+    public void okXmlDefaultSuccess()
+    {
+        okXml(new FrontObj().success());
     }
     
     /**
@@ -642,4 +672,5 @@ public class BaseController
     {
         return new FrontObj().fail(errcode, errmsg).setData(obj);
     }
+    
 }

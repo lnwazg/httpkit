@@ -22,6 +22,8 @@ public class CtrlFilterChain extends BaseController
      */
     ControllerCallback callback;
     
+    Object callbackResult;
+    
     /**
      * 移动到链条的下一个元素
      * @author lnwazg@126.com
@@ -35,7 +37,7 @@ public class CtrlFilterChain extends BaseController
             //如果当前已经到达末尾了，那么就直接调用最终的controller方法吧
             if (callback != null)
             {
-                callback.call();
+                callbackResult = callback.call();
             }
         }
         else
@@ -57,6 +59,16 @@ public class CtrlFilterChain extends BaseController
     }
     
     /**
+     * 获取最终Boss的调用结果
+     * @author nan.li
+     * @return
+     */
+    public Object getResult()
+    {
+        return callbackResult;
+    }
+    
+    /**
      * 添加到链尾
      * @author lnwazg@126.com
      * @param ctrlFilter
@@ -75,4 +87,5 @@ public class CtrlFilterChain extends BaseController
     {
         return filters;
     }
+    
 }
