@@ -1,5 +1,6 @@
 package com.lnwazg.httpkit.filter.adapter;
 
+import com.lnwazg.httpkit.controller.BaseController;
 import com.lnwazg.httpkit.filter.CtrlFilter;
 import com.lnwazg.httpkit.filter.CtrlFilterChain;
 import com.lnwazg.kit.log.Logs;
@@ -9,7 +10,7 @@ import com.lnwazg.kit.log.Logs;
  * 使用该模板，将比直接实现CtrlFilter接口更加简单方便
  * @author linan
  */
-public abstract class CommonCtrlFilterAdapter implements CtrlFilter
+public abstract class CommonCtrlFilterAdapter extends BaseController implements CtrlFilter
 {
     
     @Override
