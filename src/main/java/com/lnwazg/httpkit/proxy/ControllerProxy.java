@@ -64,7 +64,7 @@ public class ControllerProxy
                 else
                 {
                     //自有方法
-                    //                    Logs.i(String.format("开始用过滤器代理自有方法: %s", method.getName()));
+                    //Logs.i(String.format("开始用过滤器代理自有方法: %s", method.getName()));
                     //依次调用过滤器的链子，达成目的即可
                     //最终调用完毕后的回调，其实就是调用的当前的这个controller
                     ctrlFilterChain.setCallback(new ControllerCallback()

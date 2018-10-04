@@ -46,7 +46,8 @@ public class CtrlFilterChain extends BaseController
     }
     
     /**
-     * 设置回调函数
+     * 设置回调函数<br>
+     * 这里设置的是整个过滤器链最终作用完毕后真正应该被调用的方法：它才是幕后大佬，是徐徐登场的最终boss
      * @author lnwazg@126.com
      * @param callback
      */
