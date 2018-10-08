@@ -1,20 +1,23 @@
 # httpkit
 一个精巧的java版http服务器，可替代tomcat、jetty，80ms极速启动。
 
-- 服务器元信息
-- 精巧、独立，占用资源少，可替代tomcat
-- 80ms极速启动
+- 精巧、独立，占用资源少，80ms极速启动,可替代tomcat
 - 内置风控处理，防瞬时并发量过大崩溃
-- 可独立jar包运行，一个jar包就是一个网站！
-- 与nginx完美配合
-- 内置简洁方便的http文件服务器
-- 内置自适应扫描的全盘服务器
-- Controller自动扫描，无需显式添加。亦可自定义扫描目录
-- 支持path name param
+- 可以独立jar包方式运行，轻巧快速
+- 可与nginx完美配合
+- 支持内置的简洁方便的http文件服务器
+- 支持内置自适应扫描的全盘服务器
+- Controller指定包之后自动扫描，也可以自定义包扫描目录
+- 支持path name param，便捷RESTUL模式开发
 - freemarker模板支持
-- 智能跨域处理（属于系统默认的内置过滤器）
-- 内置了强大的过滤器支持，可无限扩展，无尽简化你的开发流程
-- 可支持多端口启动
+- 强大的过滤器支持
+- 默认启用了自动跨域处理（属于系统默认的内置过滤器）
+- 支持多端口、多服务实例方式启动   
+- 支持服务器元信息显示，日志启动后即可查看
+- Controller支持类级和方法级注解：@JsonResponse和@XmlResponse，用于将返回的对象自动转换成Json或Xml格式（2018-10-6）
+- TODO RESTFUL模式增强，可以仅支持指定的http method
+- TODO 强化文档，降低入门难度
+- TODO 现有框架为BIO模式，规划整合NIO模式
 
 ### 使用方法
 
@@ -41,8 +44,6 @@ http://127.0.0.1:7777/root/list
 
 访问具体的控制器
 http://127.0.0.1:7777/root/base/index
-
-
 
 ### Controller类的写法
 ```java
@@ -94,9 +95,3 @@ public class FirstController extends Controller
 
 ### 执行一个controller，输出一个json对象
 ![执行一个controller](screenshots/3.png)
-
-### 近期计划
-- 强化文档，降低入门难度
-
-### 远期计划：  
-- 现有框架为BIO模式，规划整合NIO模式
