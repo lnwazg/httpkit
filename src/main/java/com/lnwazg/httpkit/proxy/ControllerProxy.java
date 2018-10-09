@@ -10,6 +10,7 @@ import com.lnwazg.httpkit.controller.BaseController;
 import com.lnwazg.httpkit.filter.ControllerCallback;
 import com.lnwazg.httpkit.filter.CtrlFilter;
 import com.lnwazg.httpkit.filter.CtrlFilterChain;
+import com.lnwazg.kit.common.model.FrontObj;
 import com.lnwazg.kit.reflect.ClassKit;
 import com.lnwazg.kit.singleton.B;
 
@@ -123,27 +124,40 @@ public class ControllerProxy
                             {
                                 e.printStackTrace();
                                 
+                                //获取Controller方法的返回对象类型
+                                Class<?> returnType = method.getReturnType();
+                                Object errObj = null;
+                                //根据返回对象的类型做自动错误对象输出
+                                if (returnType == FrontObj.class)
+                                {
+                                    errObj = FrontObj.newInstance().fail(10001, e.getMessage());
+                                }
+                                else
+                                {
+                                    errObj = e.getMessage();
+                                }
+                                
                                 //方法级注解优先于类级别注解
                                 if (methodXmlResponse)
                                 {
                                     //将返回对象转换成xml输出
-                                    ((BaseController)obj).okXml(e.getMessage());
+                                    ((BaseController)obj).okXml(errObj);
                                 }
                                 else if (methodJsonResponse)
                                 {
                                     //将返回对象转换成json输出
-                                    ((BaseController)obj).okJson(e.getMessage());
+                                    ((BaseController)obj).okJson(errObj);
                                 }
                                 //类级别注解
                                 else if (classXmlResponse)
                                 {
                                     //将返回对象转换成xml输出
-                                    ((BaseController)obj).okXml(e.getMessage());
+                                    ((BaseController)obj).okXml(errObj);
                                 }
                                 else if (classJsonResponse)
                                 {
                                     //将返回对象转换成json输出
-                                    ((BaseController)obj).okJson(e.getMessage());
+                                    ((BaseController)obj).okJson(errObj);
                                 }
                                 //无注解
                                 else
