@@ -15,7 +15,8 @@
 - 支持多端口、多服务实例方式启动   
 - 支持服务器元信息显示，日志启动后即可查看
 - Controller支持类级和方法级注解：@JsonResponse和@XmlResponse，用于将返回的对象自动转换成Json或Xml格式（2018-10-6）
-- TODO RESTFUL模式增强，可以仅支持指定的http method
+- RESTFUL模式增强，可以通过注解方式仅支持指定的http method，对非支持的http method进行拦截（2018-10-9）
+- TODO Controller Proxy 性能优化
 - TODO 强化文档，降低入门难度
 - TODO 现有框架为BIO模式，规划整合NIO模式
 

@@ -47,7 +47,7 @@ public class HttpReader implements Closeable
     public final BufferedReader reader;
     
     /**
-     * POST GET
+     * POST GET HEAD等
      */
     private String requestType;
     

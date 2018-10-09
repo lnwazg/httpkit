@@ -6,6 +6,15 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import com.lnwazg.httpkit.anno.JsonResponse;
 import com.lnwazg.httpkit.anno.XmlResponse;
+import com.lnwazg.httpkit.anno.httpmethod.CONNECT;
+import com.lnwazg.httpkit.anno.httpmethod.DELETE;
+import com.lnwazg.httpkit.anno.httpmethod.GET;
+import com.lnwazg.httpkit.anno.httpmethod.HEAD;
+import com.lnwazg.httpkit.anno.httpmethod.OPTIONS;
+import com.lnwazg.httpkit.anno.httpmethod.PATCH;
+import com.lnwazg.httpkit.anno.httpmethod.POST;
+import com.lnwazg.httpkit.anno.httpmethod.PUT;
+import com.lnwazg.httpkit.anno.httpmethod.TRACE;
 import com.lnwazg.httpkit.controller.BaseController;
 import com.lnwazg.httpkit.filter.ControllerCallback;
 import com.lnwazg.httpkit.filter.CtrlFilter;
@@ -76,6 +85,19 @@ public class ControllerProxy
                     //是否json格式的响应
                     boolean methodJsonResponse = method.isAnnotationPresent(JsonResponse.class);
                     
+                    boolean GET = method.isAnnotationPresent(GET.class);
+                    boolean POST = method.isAnnotationPresent(POST.class);
+                    boolean CONNECT = method.isAnnotationPresent(CONNECT.class);
+                    boolean DELETE = method.isAnnotationPresent(DELETE.class);
+                    boolean HEAD = method.isAnnotationPresent(HEAD.class);
+                    boolean OPTIONS = method.isAnnotationPresent(OPTIONS.class);
+                    boolean PATCH = method.isAnnotationPresent(PATCH.class);
+                    boolean PUT = method.isAnnotationPresent(PUT.class);
+                    boolean TRACE = method.isAnnotationPresent(TRACE.class);
+                    
+                    //是否有http方法注解
+                    boolean hasHttpMethodAnno = (GET || POST || CONNECT || DELETE || HEAD || OPTIONS || PATCH || PUT || TRACE);
+                    
                     //自有方法
                     //Logs.i(String.format("开始用过滤器代理自有方法: %s", method.getName()));
                     //依次调用过滤器的链子，达成目的即可
@@ -86,6 +108,55 @@ public class ControllerProxy
                         public Object call()
                         {
                             //最后调用Controller的方法
+                            //此处需要根据注解声明，来拦截指定的非法请求http method
+                            
+                            //如果是不在注解列表内的方法，那么真正调用之前要拦截，直接返回报错信息：不支持的http method
+                            
+                            //请求的http方法
+                            String requestHttpMethod = ((BaseController)obj).getRequestType();
+                            boolean checkPass = true;
+                            if (hasHttpMethodAnno)
+                            {
+                                //有注解时，需要做实际调用方法校验
+                                switch (requestHttpMethod)
+                                {
+                                    case "GET":
+                                        checkPass = GET;
+                                        break;
+                                    case "POST":
+                                        checkPass = POST;
+                                        break;
+                                    case "CONNECT":
+                                        checkPass = CONNECT;
+                                        break;
+                                    case "DELETE":
+                                        checkPass = DELETE;
+                                        break;
+                                    case "HEAD":
+                                        checkPass = HEAD;
+                                        break;
+                                    case "OPTIONS":
+                                        checkPass = OPTIONS;
+                                        break;
+                                    case "PATCH":
+                                        checkPass = PATCH;
+                                        break;
+                                    case "PUT":
+                                        checkPass = PUT;
+                                        break;
+                                    case "TRACE":
+                                        checkPass = TRACE;
+                                        break;
+                                    default:
+                                        checkPass = false;
+                                        break;
+                                }
+                            }
+                            if (!checkPass)
+                            {
+                                ((BaseController)obj).okHtml("该Controller不支持此http调用方式： " + requestHttpMethod);
+                                return null;
+                            }
                             
                             Object returnObj = null;
                             try

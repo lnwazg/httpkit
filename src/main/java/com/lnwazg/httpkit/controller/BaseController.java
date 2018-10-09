@@ -111,6 +111,16 @@ public class BaseController
     }
     
     /**
+     * 获取请求的http method，例如：POST GET HEAD等
+     * @author nan.li
+     * @return
+     */
+    public String getRequestType()
+    {
+        return getReader().getRequestType();
+    }
+    
+    /**
      * 获取所有的cookie信息map
      * @author nan.li
      * @return
