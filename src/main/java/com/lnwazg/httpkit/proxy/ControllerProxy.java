@@ -71,11 +71,11 @@ public class ControllerProxy
             public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy)
                 throws Throwable
             {
-                //                Logs.i(String.format("Begin to invoke proxy method: %s", method.getName()));
+                //Logs.i(String.format("Begin to invoke proxy method: %s", method.getName()));
                 if (!ArrayUtils.contains(methods, method))
                 {
                     //继承过来的方法
-                    //                    Logs.i(String.format("继承过来的方法 %s，直接调用即可！", method.getName()));
+                    //Logs.i(String.format("继承过来的方法 %s，直接调用即可！", method.getName()));
                     return proxy.invokeSuper(obj, args);
                 }
                 else
@@ -85,6 +85,7 @@ public class ControllerProxy
                     //是否json格式的响应
                     boolean methodJsonResponse = method.isAnnotationPresent(JsonResponse.class);
                     
+                    //是否打开了某Http Method 注解
                     boolean GET = method.isAnnotationPresent(GET.class);
                     boolean POST = method.isAnnotationPresent(POST.class);
                     boolean CONNECT = method.isAnnotationPresent(CONNECT.class);
@@ -114,47 +115,55 @@ public class ControllerProxy
                             
                             //请求的http方法
                             String requestHttpMethod = ((BaseController)obj).getRequestType();
-                            boolean checkPass = true;
+                            
+                            //http method检查是否通过
+                            //默认设置为检查通过
+                            boolean httpMethodCheckPass = true;
+                            
+                            //当有http method注解时才检查；若没有任何http method注解，则不做任何检查，默认就是全部放行的
                             if (hasHttpMethodAnno)
                             {
                                 //有注解时，需要做实际调用方法校验
                                 switch (requestHttpMethod)
                                 {
                                     case "GET":
-                                        checkPass = GET;
+                                        httpMethodCheckPass = GET;
                                         break;
                                     case "POST":
-                                        checkPass = POST;
+                                        httpMethodCheckPass = POST;
                                         break;
                                     case "CONNECT":
-                                        checkPass = CONNECT;
+                                        httpMethodCheckPass = CONNECT;
                                         break;
                                     case "DELETE":
-                                        checkPass = DELETE;
+                                        httpMethodCheckPass = DELETE;
                                         break;
                                     case "HEAD":
-                                        checkPass = HEAD;
+                                        httpMethodCheckPass = HEAD;
                                         break;
                                     case "OPTIONS":
-                                        checkPass = OPTIONS;
+                                        httpMethodCheckPass = OPTIONS;
                                         break;
                                     case "PATCH":
-                                        checkPass = PATCH;
+                                        httpMethodCheckPass = PATCH;
                                         break;
                                     case "PUT":
-                                        checkPass = PUT;
+                                        httpMethodCheckPass = PUT;
                                         break;
                                     case "TRACE":
-                                        checkPass = TRACE;
+                                        httpMethodCheckPass = TRACE;
                                         break;
                                     default:
-                                        checkPass = false;
+                                        //如果以上定义的所有的方法都没匹配到，那么认为是非法请求，不可放行
+                                        httpMethodCheckPass = false;
                                         break;
                                 }
                             }
-                            if (!checkPass)
+                            
+                            //检查放行结果
+                            if (!httpMethodCheckPass)
                             {
-                                ((BaseController)obj).okHtml("该Controller不支持此http调用方式： " + requestHttpMethod);
+                                ((BaseController)obj).okHtml("非法的http调用方式 - " + requestHttpMethod);
                                 return null;
                             }
                             
@@ -239,7 +248,8 @@ public class ControllerProxy
                             return returnObj;
                         }
                     });
-                    //取出第0个过滤器
+                    
+                    //取出第0个过滤器，开始触发过滤器链
                     CtrlFilter ctrlFilter = ctrlFilterChain.getFilters().get(0);
                     //开启过滤模式（责任链模式）
                     ctrlFilter.doFilter(ctrlFilterChain);

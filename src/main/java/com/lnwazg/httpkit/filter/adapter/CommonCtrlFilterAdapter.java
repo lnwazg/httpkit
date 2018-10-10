@@ -17,6 +17,7 @@ public abstract class CommonCtrlFilterAdapter extends BaseController implements 
     public void doFilter(CtrlFilterChain filterChain)
     {
         before();
+        
         if (shouldPass())
         {
             filterChain.moveToNext(this);
@@ -25,6 +26,7 @@ public abstract class CommonCtrlFilterAdapter extends BaseController implements 
         {
             Logs.i("shouldPass()返回false，过滤器链提前结束！");
         }
+        
         after();
     }
     

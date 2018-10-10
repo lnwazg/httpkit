@@ -270,12 +270,12 @@ public class HttpReader implements Closeable
                 {
                     break;
                 }
-                int colon = header.indexOf(':');
-                if (colon == -1)
+                int colonIndex = header.indexOf(':');
+                if (colonIndex == -1)
                 {
                     throw new IllegalStateException("Unable to handle header: " + header);
                 }
-                headerMap.put(header.substring(0, colon).trim(), header.substring(colon + 1).trim());
+                headerMap.put(header.substring(0, colonIndex).trim(), header.substring(colonIndex + 1).trim());
             }
             return true;
         }

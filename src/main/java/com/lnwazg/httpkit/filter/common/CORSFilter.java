@@ -22,8 +22,10 @@ public class CORSFilter extends BaseController implements CtrlFilter
         {
             addHeaderPre("Access-Control-Allow-Origin", origin);
         }
+        
         //过滤器链是否应该继续移动
         filterChain.moveToNext(this);
+        
         //之后的逻辑
         //...
     }

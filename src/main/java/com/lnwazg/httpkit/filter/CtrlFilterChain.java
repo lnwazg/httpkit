@@ -87,5 +87,4 @@ public class CtrlFilterChain extends BaseController
     {
         return filters;
     }
-    
 }
