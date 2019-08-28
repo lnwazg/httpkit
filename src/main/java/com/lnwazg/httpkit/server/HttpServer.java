@@ -73,7 +73,7 @@ public class HttpServer extends Server
      */
     private String[] searchDisks =
         {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"};
-    
+        
     /**
      * 是否初始化过FreeMarker的root目录<br>
      * 仅需初始化一次即可
@@ -177,8 +177,8 @@ public class HttpServer extends Server
         {
             Class.forName("com.lnwazg.myzoo.framework.MyZooClient");
             Logs.i("检测到myzoo-api依赖库，开始检测加载myzoo配置文件...");
-            //            myZooInitSuccess = MyZooClient.initDefaultConfig();
-            myZooInitSuccess = (boolean)ClassKit.invokeMethod("com.lnwazg.myzoo.framework.MyZooClient", "initDefaultConfig");
+            Object myZooClient = ClassKit.newInstance("com.lnwazg.myzoo.framework.MyZooClient");
+            myZooInitSuccess = (boolean)ClassKit.invokeMethod(myZooClient, "initDefaultConfig");//myZooInitSuccess = MyZooClient.initDefaultConfig();
             if (myZooInitSuccess)
             {
                 //启动的时候，取出一些节点的基本信息
@@ -189,7 +189,7 @@ public class HttpServer extends Server
                 //追加额外的信息
                 appendHttpServiceList(map);
                 //                MyZooClient.registerService(map);
-                ClassKit.invokeMethod("com.lnwazg.myzoo.framework.MyZooClient", "registerService", map);
+                ClassKit.invokeMethod(myZooClient, "registerService", new Class[] {Map.class}, map);
             }
         }
         catch (ClassNotFoundException e)
@@ -215,7 +215,8 @@ public class HttpServer extends Server
                 Map<String, String> map = Maps.asStrMap("node", nodeName, "group", groupName, "server", server, "port", port + "");
                 //追加额外的信息
                 //                MyZooClient.unregisterService(map);
-                ClassKit.invokeMethod("com.lnwazg.myzoo.framework.MyZooClient", "unregisterService", map);
+                Object myZooClient = ClassKit.newInstance("com.lnwazg.myzoo.framework.MyZooClient");
+                ClassKit.invokeMethod(myZooClient, "unregisterService", new Class[] {Map.class}, map);
             }
         }
         catch (Exception e)
@@ -420,7 +421,6 @@ public class HttpServer extends Server
         return null;
     }
     
-   
     /**
      * 根据指定的类名列表，初始化过滤器配置<br>
      * 从上到下有序加载
