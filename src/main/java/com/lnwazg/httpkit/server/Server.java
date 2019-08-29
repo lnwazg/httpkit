@@ -51,7 +51,7 @@ public class Server implements AutoCloseable
     public void listen(HttpServer httpServer)
     {
         Logs.i("Routing over!");
-        ExecMgr.startDaemenThread(() -> {
+        ExecMgr.startThread(() -> {
             try
             {
                 while (!isClosed())
