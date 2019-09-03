@@ -1,12 +1,18 @@
 package com.lnwazg.httpkit.client.rpc;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.lang3.CharEncoding;
+
 import com.lnwazg.kit.gson.GsonKit;
+import com.lnwazg.kit.http.HttpUtils;
+import com.lnwazg.kit.log.Logs;
+import com.lnwazg.kit.map.Maps;
 import com.lnwazg.kit.reflect.ClassKit;
 
 import net.sf.cglib.proxy.Enhancer;
@@ -107,7 +113,14 @@ public class HttpRpc
                     final String requestParamFinal = requestParam;
                     //在线程池中排队调用
                     singleExec.execute(() -> {
-                        callHttp(requestUri, uniqueMethodName, requestParamFinal);
+                        try
+                        {
+                            callHttp(requestUri, uniqueMethodName, requestParamFinal);
+                        }
+                        catch (Exception e)
+                        {
+                            Logs.error(e);
+                        }
                     });
                 }
                 else
@@ -128,10 +141,12 @@ public class HttpRpc
      * @param uniqueMethodName
      * @param requestParam
      * @return
+     * @throws UnsupportedEncodingException 
      */
     private String callHttp(String requestUri, String uniqueMethodName, String requestParam)
+        throws UnsupportedEncodingException
     {
-        return null;
+        return HttpUtils.doPost(requestUri, "application/json", requestParam.getBytes(CharEncoding.UTF_8), Maps.asStrMap("method", uniqueMethodName), HttpUtils.CONNECT_TIME_OUT, HttpUtils.READ_TIME_OUT);
     }
     
     /**
@@ -143,6 +158,6 @@ public class HttpRpc
     private String createRequestUri(Class<?> interfaceClazz)
     {
         //http://127.0.0.1:8080/root/__httpRpc__/{interfaceName}
-        return String.format("%s/__httpRpc__/%s", uri, interfaceClazz.getName());
+        return String.format("%s/__httpRpc__/%s", uri, interfaceClazz.getSimpleName());
     }
 }

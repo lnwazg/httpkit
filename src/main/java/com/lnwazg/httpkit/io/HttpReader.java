@@ -93,7 +93,7 @@ public class HttpReader implements Closeable
     /**
      * 消息体字节码
      */
-    private byte[] body;
+//    private byte[] body;
     
     /**
      * 消息体字符串，跟body字节码一一对应
@@ -136,15 +136,15 @@ public class HttpReader implements Closeable
      * @author nan.li
      * @return
      */
-    public byte[] readBody()
-    {
-        return body;
-    }
-    
-    public byte[] getBody()
-    {
-        return body;
-    }
+//    public byte[] readBody()
+//    {
+//        return body;
+//    }
+//    
+//    public byte[] getBody()
+//    {
+//        return body;
+//    }
     
     public String getPayloadBody()
     {
@@ -156,23 +156,23 @@ public class HttpReader implements Closeable
      * @author nan.li
      * @return
      */
-    public String readBodyAsString()
-    {
-        try
-        {
-            return new String(body, CharEncoding.UTF_8);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            e.printStackTrace();
-        }
-        return null;
-    }
+//    public String readBodyAsString()
+//    {
+//        try
+//        {
+//            return new String(body, CharEncoding.UTF_8);
+//        }
+//        catch (UnsupportedEncodingException e)
+//        {
+//            e.printStackTrace();
+//        }
+//        return null;
+//    }
     
-    public String getBodyAsString()
-    {
-        return readBodyAsString();
-    }
+//    public String getBodyAsString()
+//    {
+//        return readBodyAsString();
+//    }
     
     public String getRequestType()
     {
@@ -343,7 +343,6 @@ public class HttpReader implements Closeable
                     //1.针对application/x-www-form-urlencoded这种编码的处理
                     if (contentType.indexOf("application/x-www-form-urlencoded") != -1)
                     {
-                        String payloadBody = getPayloadBody();
                         //userId=2&last_name=Doe&action=Submit
                         //post  payload body
                         //post方式的话，会用实际数据进行覆盖参数操作
@@ -428,7 +427,7 @@ public class HttpReader implements Closeable
                 //之所以用indexOf进行匹配，是为了能兼容“application/x-www-form-urlencoded;charset=UTF-8”类似这样的增加了编码方式的写法
                 //匹配到form提交的表单的格式
                 //form提交的消息体将会被以‘%’字符进行编码
-                if (contentType.indexOf("application/x-www-form-urlencoded") != -1)
+                if (contentType.indexOf("application/x-www-form-urlencoded") != -1 || contentType.indexOf("application/json") != -1)
                 {
                     //如果是最经典的form提交等方式的话，那么将payload解析成字符串是很正确的选择
                     StringBuilder payload = new StringBuilder();
@@ -448,6 +447,7 @@ public class HttpReader implements Closeable
                 }
                 //else 针对contentType为application/json等非标准形式的参数解析，可以留待后续扩充。
                 //当然也可以同样解析为字符串，然后留待后续应用层进行解析
+                
                 //else multipart  文件上传的格式解析。可能要解析成字节流数组。
                 //以后再解析
             }

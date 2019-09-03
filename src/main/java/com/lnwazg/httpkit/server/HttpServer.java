@@ -73,7 +73,7 @@ public class HttpServer extends Server
      */
     private String[] searchDisks =
         {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"};
-    
+        
     /**
      * 是否初始化过FreeMarker的root目录<br>
      * 仅需初始化一次即可
@@ -389,6 +389,29 @@ public class HttpServer extends Server
     }
     
     /**
+     * 是否启用了RPC服务
+     */
+    private boolean enableRpc = false;
+    public HttpServer packageSearchAndInitRpc(String packageName)
+    {
+        Logs.i("启用RPC service");
+        enableRpc = true;
+        List<Class<?>> cList = ClassKit.getPackageAllClasses(packageName.trim());
+        try
+        {
+            for (Class<?> clazz : cList)
+            {
+                router.registerRpcImpl(clazz);
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        return this;
+    }
+    
+    /**
      * 自适应加载过滤器配置类列表<br>
      * 首先尝试从配置文件：filters.cfg中加载，若无配置文件，则使用系统内置的默认的过滤器列表
      * @return
@@ -564,5 +587,9 @@ public class HttpServer extends Server
     {
         this.httpServiceSummary = httpServiceSummary;
     }
-    
+
+    public boolean isEnableRpc()
+    {
+        return enableRpc;
+    }
 }

@@ -2,6 +2,7 @@ package com.lnwazg.httpkit.handler.route;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.MutablePair;
 
+import com.google.gson.JsonArray;
 import com.lnwazg.httpkit.CommonResponse;
 import com.lnwazg.httpkit.ControllerPathMethodMapper;
 import com.lnwazg.httpkit.HttpResponseCode;
@@ -37,6 +39,7 @@ import com.lnwazg.kit.http.url.URIEncoderDecoder;
 import com.lnwazg.kit.http.url.UriParamUtils;
 import com.lnwazg.kit.log.Logs;
 import com.lnwazg.kit.map.Maps;
+import com.lnwazg.kit.reflect.ClassKit;
 import com.lnwazg.kit.singleton.B;
 import com.lnwazg.kit.str.UrlKit;
 
@@ -132,17 +135,71 @@ public class Router implements HttpHandler
                     //如果是"/root/__httpRpc__/"这样的开头，则根据末端的interfaceName，找到当初根据interfaceName注册的interfaceImpl，
                     //从头中获取uniqueMethodName，然后到interfaceImpl中匹配该uniqueMethodName，获得真正的method对象
                     //从体中获取params json，根据真正的method对象拿到paramClass[]，然后依次将json还原成对应的参数Object[]
-                    //最后调用该interfaceImpl的method，传入还原出的Object[]，得到响应对象。将响应结果转换为json，返回给客户端即可。
+                    //最后调用该interfaceImpl的method，传入还原出的args[]，得到响应对象。将响应结果转换为json，返回给客户端即可。
+                    
                     //TODO package search "com.lnwazg.rpc.service"，注册对应的interface和impl。同时RPC服务开关自动打开。
                     //TODO 客户端负载均衡地RPC的实现（客户端缓存，随机挑取、失败重试）
                     //TODO 服务端负载均衡地RPC的实现（每次都查注册中心获取随机一个client，然后调用）（每次都多了一次与注册中心的交互，因此效率低是一定的）
                     
+                    //插入的逻辑：RPC判断
+                    if (ioInfo.getHttpServer().isEnableRpc())
+                    {
+                        if (matchRpc(uri, ioInfo))
+                        {
+                            String serviceName = getRpcServiceName(uri, ioInfo);
+                            Logs.i("RPC call serviceName=" + serviceName);
+                            if (rpcInstanceMap.containsKey(serviceName))
+                            {
+                                //准备调用
+                                Object interfaceImpl = rpcInstanceMap.get(serviceName);
+                                String uniqueUnfullMethodName = ioInfo.getReader().getHeader("method");
+                                String reqJson = ioInfo.getReader().getPayloadBody();
+                                Method method = ClassKit.getMethodByUniqueUnFullMethodName(interfaceImpl, uniqueUnfullMethodName);
+                                Logs.d("find service from rpcInstanceMap, uniqueMethodName=" + uniqueUnfullMethodName + " reqJson=" + reqJson + " method=" + method);
+                                if (method != null)
+                                {
+                                    Class<?>[] paramClazzArray = method.getParameterTypes();
+                                    Object retObj = null;
+                                    if (paramClazzArray.length > 0)
+                                    {
+                                        Object[] args = new Object[paramClazzArray.length];
+                                        JsonArray jsonArray = GsonKit.parseString2JsonArray(reqJson);
+                                        for (int i = 0; i < args.length; i++)
+                                        {
+                                            String aContent = jsonArray.get(i).toString();
+                                            args[i] = GsonKit.parseString2Object(aContent, paramClazzArray[i]);
+                                        }
+                                        retObj = method.invoke(interfaceImpl, args);
+                                    }
+                                    else
+                                    {
+                                        retObj = method.invoke(interfaceImpl);
+                                    }
+                                    String retStr = GsonKit.parseObject2String(retObj);
+                                    ExecMgr.cachedExec.execute(() -> {
+                                        try
+                                        {
+                                            RenderUtils.renderMsg(ioInfo, HttpResponseCode.OK, retStr, "json");
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            e.printStackTrace();
+                                        }
+                                    });
+                                }
+                                else
+                                {
+                                    Logs.e("method is undefined:" + uniqueUnfullMethodName);
+                                }
+                            }
+                        }
+                    }
                     //3.查找不到，则从docRoutesMap中查找  例如     /root/games/1.doc?aaa=123
                     //key:   /root/games   value: File
                     //key:   /root/list
                     
                     //4.如果是list请求，列出根目录的文件服务器列表
-                    if (matchDirRootListDrives(uri, ioInfo))
+                    else if (matchDirRootListDrives(uri, ioInfo))
                     {
                         listDirRootDrives(ioInfo);
                     }
@@ -356,6 +413,25 @@ public class Router implements HttpHandler
             return true;
         }
         return false;
+    }
+    
+    /**
+     * 是否符合RPC调用的URI
+     * @author nan.li
+     * @param uri
+     * @param ioInfo
+     * @return
+     */
+    private boolean matchRpc(String uri, IOInfo ioInfo)
+    {
+        ///root/__httpRpc__/{interfaceName}
+        return uri.startsWith(String.format("%s/__httpRpc__/", ioInfo.getHttpServer().getBasePath()));
+    }
+    
+    private String getRpcServiceName(String uri, IOInfo ioInfo)
+    {
+        ///root/__httpRpc__/{interfaceName}
+        return uri.substring(String.format("%s/__httpRpc__/", ioInfo.getHttpServer().getBasePath()).length());
     }
     
     private ImmutableTriple<String, String, String> findResourcePathFromFreemarkerRouteMap(String uri)
@@ -802,6 +878,23 @@ public class Router implements HttpHandler
             httpServer.setFkResourcePath(resourcePath);
             httpServer.setInitFreemarkerRoot(true);
         }
+    }
+    
+    /**
+     * RPC实例表
+     */
+    private final Map<String, Object> rpcInstanceMap = new HashMap<>();
+    
+    /**
+     * 注册RPC的实例对象
+     * @author nan.li
+     * @param clazz
+     */
+    public void registerRpcImpl(Class<?> clazz)
+    {
+        String interfaceName = clazz.getInterfaces()[0].getSimpleName();
+        Logs.i("注册RPC service:" + interfaceName);
+        rpcInstanceMap.put(interfaceName, ClassKit.newInstance(clazz));
     }
     
 }
