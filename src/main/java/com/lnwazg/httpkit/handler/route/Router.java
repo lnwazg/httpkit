@@ -19,6 +19,7 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import com.lnwazg.httpkit.CommonResponse;
 import com.lnwazg.httpkit.ControllerPathMethodMapper;
 import com.lnwazg.httpkit.HttpResponseCode;
+import com.lnwazg.httpkit.anno.IgnoreRoute;
 import com.lnwazg.httpkit.controller.BaseController;
 import com.lnwazg.httpkit.exception.RoutingException;
 import com.lnwazg.httpkit.handler.HttpHandler;
@@ -600,7 +601,6 @@ public class Router implements HttpHandler
             //                e.printStackTrace();
             //            }
             //此处的newInstance换成动态代理生成的对象，从单例表中取出那个动态代理对象
-            
             controllerClassObjectMap.put(c, B.g(c));
         }
         addControllerRoutes(c, controllerClassObjectMap.get(c), router);
@@ -619,118 +619,125 @@ public class Router implements HttpHandler
         {
             throw new IllegalArgumentException();
         }
-        //        Class<?> c = controller.getClass();
         Class<?> c = (Class<?>)controllerClazz;
-        String basePath = httpServer.getBasePath();
-        //基础路径
+        String basePath = httpServer.getBasePath();//基础路径
         if (c.isAnnotationPresent(Controller.class))
         {
+            //只有加了@Controller注解的类才会路由
             Controller bp = c.getAnnotation(Controller.class);
             String bpValue = bp.value();
             if (StringUtils.isNotEmpty(bpValue) && !bpValue.equals("/"))
             {
                 basePath = basePath + bpValue;
             }
+            String finalBasePath = basePath;
+            do
+            {
+                //对所有的声明的方法都进行映射
+                Arrays.stream(c.getDeclaredMethods()).forEach(method -> {
+                    //只有当该方法没有被忽略时，才会对其路由
+                    if (!method.isAnnotationPresent(IgnoreRoute.class))
+                    {
+                        //方法名拼接上斜杠，就是路径
+                        String path = "";
+                        
+                        //取出Controller方法上面的注释，便于元数据页面进行描述
+                        String controllerMethodAnno = null;
+                        if (method.isAnnotationPresent(Anno.class))
+                        {
+                            controllerMethodAnno = method.getAnnotation(Anno.class).value();
+                        }
+                        
+                        //方法映射
+                        String methodMapping = method.getName();
+                        //如果上面有注解，那么就映射到具体的注解所指定的路径上去
+                        if (method.isAnnotationPresent(RequestMapping.class))
+                        {
+                            String annoValue = method.getAnnotation(RequestMapping.class).value();
+                            if (StringUtils.isNotEmpty(annoValue))
+                            {
+                                // /cache
+                                if (annoValue.startsWith("/"))
+                                {
+                                    //@RequestMapping(value = "/cache")
+                                    //截取到斜杠后面的内容
+                                    annoValue = annoValue.substring(1);// cache
+                                }
+                                if (StringUtils.isNotEmpty(annoValue))
+                                {
+                                    methodMapping = annoValue;
+                                }
+                            }
+                        }
+                        //    /users/{userId}/topics/{topicId}
+                        //    /cache
+                        //    可能是走RESTFUL模糊匹配uri参数的，也可能不走
+                        //是否是正则匹配的url
+                        boolean regexMapping = methodMapping.indexOf("{") != -1;
+                        
+                        //controller的结尾是否需要以.do结尾
+                        if (StringUtils.isNotEmpty(httpServer.getControllerSuffix()))
+                        {
+                            //有后缀，则拼接上后缀
+                            path = String.format("%s/%s.%s", finalBasePath, methodMapping, httpServer.getControllerSuffix()).trim();
+                        }
+                        else
+                        {
+                            //无后缀，则直接是裸方法名
+                            path = String.format("%s/%s", finalBasePath, methodMapping).trim();
+                        }
+                        
+                        //如何是正则表达式的话，那么还要借用另一个map多做一层关联
+                        if (regexMapping)
+                        {
+                            //path = /card/users/{userId}/topics/{topicId}.do
+                            
+                            //将正则的内容放入到另一个表里面
+                            //原有的methodMapping         /card/users/{userId}/topics/{topicId}.do
+                            //期望匹配到的实际链接                       /card/users/155/topics/200.do
+                            
+                            //参数表：                                                     [userId, topicId]
+                            
+                            //匹配正则                                                      ^/card/users/\\w+/topics/\\w+.do$            用于进行url参数数据匹配
+                            //提取正则                                                      ^/card/users/(\\w+)/topics/(\\w+).do$        用户进行url参数提取，获得到 155 200这两个参数，对应于  [userId, topicId] 参数名列表
+                            
+                            //                    Logs.d("regexMapping path: " + path);
+                            //用于提取出参数表
+                            Pattern pat = Pattern.compile("\\{(\\w+)\\}");
+                            Matcher mat = pat.matcher(path);
+                            List<String> paramNameList = new ArrayList<>();//[userId,topicId]
+                            while (mat.find())
+                            {
+                                for (int i = 1; i <= mat.groupCount(); i++)
+                                {
+                                    String paramName = mat.group(i);
+                                    paramNameList.add(paramName);
+                                }
+                            }
+                            //                    Logs.d("paramNameList: " + paramNameList);
+                            
+                            //path = /card/users/{userId}/topics/{topicId}.do
+                            String urlRegex = String.format("^%s$", path.replaceAll("\\{\\w+\\}", "\\\\w+"));//  ^/card/users/\w+/topics/\w+.do$ 
+                            String extractRegex = String.format("^%s$", path.replaceAll("\\{\\w+\\}", "(\\\\w+)"));  //^/card/users/(\w+)/topics/(\w+).do$ 
+                            //                                        Logs.d("urlRegex: " + urlRegex);
+                            //                                        Logs.d("extractRegex: " + extractRegex);
+                            router.putToRegexMap(urlRegex, new RegexMapDetail(path, extractRegex, paramNameList), controllerMethodAnno);
+                        }
+                        else
+                        {
+                            //构建路由对象
+                            ControllerPathMethodMapper controllerPathMethodMapper = new ControllerPathMethodMapper(path, method, controllerProxy);
+                            //将其放入路由表
+                            router.putControllerRoutesMap(path, controllerPathMethodMapper, controllerMethodAnno, httpServer);
+                        }
+                    }
+                });
+            } while ((c = c.getSuperclass()) != BaseController.class);
         }
-        String finalBasePath = basePath;
-        do
+        else
         {
-            //对所有的声明的方法都进行映射
-            Arrays.stream(c.getDeclaredMethods()).forEach(method -> {
-                //方法名拼接上斜杠，就是路径
-                String path = "";
-                
-                //取出Controller方法上面的注释，便于元数据页面进行描述
-                String controllerMethodAnno = null;
-                if (method.isAnnotationPresent(Anno.class))
-                {
-                    controllerMethodAnno = method.getAnnotation(Anno.class).value();
-                }
-                
-                //方法映射
-                String methodMapping = method.getName();
-                //如果上面有注解，那么就映射到具体的注解所指定的路径上去
-                if (method.isAnnotationPresent(RequestMapping.class))
-                {
-                    String annoValue = method.getAnnotation(RequestMapping.class).value();
-                    if (StringUtils.isNotEmpty(annoValue))
-                    {
-                        // /cache
-                        if (annoValue.startsWith("/"))
-                        {
-                            //@RequestMapping(value = "/cache")
-                            //截取到斜杠后面的内容
-                            annoValue = annoValue.substring(1);// cache
-                        }
-                        if (StringUtils.isNotEmpty(annoValue))
-                        {
-                            methodMapping = annoValue;
-                        }
-                    }
-                }
-                //    /users/{userId}/topics/{topicId}
-                //    /cache
-                //    可能是走RESTFUL模糊匹配uri参数的，也可能不走
-                //是否是正则匹配的url
-                boolean regexMapping = methodMapping.indexOf("{") != -1;
-                
-                //controller的结尾是否需要以.do结尾
-                if (StringUtils.isNotEmpty(httpServer.getControllerSuffix()))
-                {
-                    //有后缀，则拼接上后缀
-                    path = String.format("%s/%s.%s", finalBasePath, methodMapping, httpServer.getControllerSuffix()).trim();
-                }
-                else
-                {
-                    //无后缀，则直接是裸方法名
-                    path = String.format("%s/%s", finalBasePath, methodMapping).trim();
-                }
-                
-                //如何是正则表达式的话，那么还要借用另一个map多做一层关联
-                if (regexMapping)
-                {
-                    //path = /card/users/{userId}/topics/{topicId}.do
-                    
-                    //将正则的内容放入到另一个表里面
-                    //原有的methodMapping         /card/users/{userId}/topics/{topicId}.do
-                    //期望匹配到的实际链接                       /card/users/155/topics/200.do
-                    
-                    //参数表：                                                     [userId, topicId]
-                    
-                    //匹配正则                                                      ^/card/users/\\w+/topics/\\w+.do$            用于进行url参数数据匹配
-                    //提取正则                                                      ^/card/users/(\\w+)/topics/(\\w+).do$        用户进行url参数提取，获得到 155 200这两个参数，对应于  [userId, topicId] 参数名列表
-                    
-                    //                    Logs.d("regexMapping path: " + path);
-                    //用于提取出参数表
-                    Pattern pat = Pattern.compile("\\{(\\w+)\\}");
-                    Matcher mat = pat.matcher(path);
-                    List<String> paramNameList = new ArrayList<>();//[userId,topicId]
-                    while (mat.find())
-                    {
-                        for (int i = 1; i <= mat.groupCount(); i++)
-                        {
-                            String paramName = mat.group(i);
-                            paramNameList.add(paramName);
-                        }
-                    }
-                    //                    Logs.d("paramNameList: " + paramNameList);
-                    
-                    //path = /card/users/{userId}/topics/{topicId}.do
-                    String urlRegex = String.format("^%s$", path.replaceAll("\\{\\w+\\}", "\\\\w+"));//  ^/card/users/\w+/topics/\w+.do$ 
-                    String extractRegex = String.format("^%s$", path.replaceAll("\\{\\w+\\}", "(\\\\w+)"));  //^/card/users/(\w+)/topics/(\w+).do$ 
-                    //                                        Logs.d("urlRegex: " + urlRegex);
-                    //                                        Logs.d("extractRegex: " + extractRegex);
-                    router.putToRegexMap(urlRegex, new RegexMapDetail(path, extractRegex, paramNameList), controllerMethodAnno);
-                }
-                else
-                {
-                    //构建路由对象
-                    ControllerPathMethodMapper controllerPathMethodMapper = new ControllerPathMethodMapper(path, method, controllerProxy);
-                    //将其放入路由表
-                    router.putControllerRoutesMap(path, controllerPathMethodMapper, controllerMethodAnno, httpServer);
-                }
-            });
-        } while ((c = c.getSuperclass()) != BaseController.class);
+            //因为没加@Controller注解，所以不会对其路由
+        }
     }
     
     public static void main(String[] args)

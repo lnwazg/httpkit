@@ -94,6 +94,7 @@ public class ControllerPathMethodMapper
                     //令该方法可以被访问到（即便是私有方法）
                     controllerMethod.setAccessible(true);
                     //调用该方法
+                    //该方法必须是无参的！
                     controllerMethod.invoke(controllerObj);
                 }
                 catch (Exception e)
