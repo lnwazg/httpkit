@@ -588,19 +588,6 @@ public class Router implements HttpHandler
     {
         if (!controllerClassObjectMap.containsKey(c))
         {
-            //            try
-            //            {
-            //                controllerClassObjectMap.put(c, c.newInstance());
-            //            }
-            //            catch (InstantiationException e)
-            //            {
-            //                e.printStackTrace();
-            //            }
-            //            catch (IllegalAccessException e)
-            //            {
-            //                e.printStackTrace();
-            //            }
-            //此处的newInstance换成动态代理生成的对象，从单例表中取出那个动态代理对象
             controllerClassObjectMap.put(c, B.g(c));
         }
         addControllerRoutes(c, controllerClassObjectMap.get(c), router);
