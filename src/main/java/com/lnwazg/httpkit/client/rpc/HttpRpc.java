@@ -7,7 +7,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.lnwazg.kit.gson.GsonKit;
-import com.lnwazg.kit.log.Logs;
 
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
@@ -94,21 +93,13 @@ public class HttpRpc
                 //                returnObj = proxy.invokeSuper(obj, args);
                 String requestUri = createRequestUri(interfaceClazz);
                 String methodHead = method.getName();
-                String requestParam = "";//请求体中的json参数
+                String requestParam = "";//请求体中的json参数。默认为无参数，则请求参数为空
                 Class<?> returnClass = method.getReturnType();//响应的类
-                int paramCount = method.getParameterCount();
-                if (paramCount > 1)
+                if (args.length > 0)
                 {
-                    Logs.e("invalid method call, parameter count is larger than 1!");
-                    return null;
-                }
-                else if (paramCount == 1)
-                {
-                    requestParam = GsonKit.parseObject2String(args[0]);
-                }
-                else
-                {
-                    //无参数
+                    //方法有参数时，支持多个参数的方法调用
+                    //但是不支持方法的重载
+                    requestParam = GsonKit.parseObject2String(args);
                 }
                 if (returnClass == void.class)
                 {
