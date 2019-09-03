@@ -130,9 +130,16 @@ public class HttpRpc
         };
     }
     
+    /**
+     * 调用Http服务
+     * @author nan.li
+     * @param requestUri
+     * @param methodHead
+     * @param requestParam
+     * @return
+     */
     private String callHttp(String requestUri, String methodHead, String requestParam)
     {
-        // TODO Auto-generated method stub
         return null;
     }
     

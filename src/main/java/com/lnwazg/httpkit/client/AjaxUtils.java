@@ -30,21 +30,11 @@ public class AjaxUtils
     @Benchmark(5000)
     void test1()
     {
-        //        System.out.println();
-        //        System.out.println(getContent("http://10.13.69.28:7777/root/c/1.txt", null));
-        //        new Thread(
-        //            () -> {
-        //                getContent("http://10.13.69.28:7777/root/c/1.txt", null);
-        //            }
-        //        ).start();
         getContent("http://10.13.69.28:7777/root/c/1.txt", null);
     }
     
     public static void main(String[] args)
     {
-        //        System.out.println(getContent("http://127.0.0.1:7777/root/base/index", null));
-        //        System.out.println(getContent("http://www.qq.com", null));
-        //        System.out.println(getContent("http://www.baidu.com", null));
         TF.l(AjaxUtils.class);
     }
 }
