@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.lnwazg.kit.gson.GsonKit;
+import com.lnwazg.kit.reflect.ClassKit;
 
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
@@ -92,13 +93,12 @@ public class HttpRpc
                 Object returnObj = null;
                 //                returnObj = proxy.invokeSuper(obj, args);
                 String requestUri = createRequestUri(interfaceClazz);
-                String methodHead = method.getName();
+                String uniqueMethodName = ClassKit.getUniqueMethodName(method);//通过方法名信息特殊码生成唯一方法名，来实现方法名的“重载”
                 String requestParam = "";//请求体中的json参数。默认为无参数，则请求参数为空
                 Class<?> returnClass = method.getReturnType();//响应的类
                 if (args.length > 0)
                 {
                     //方法有参数时，支持多个参数的方法调用
-                    //但是不支持方法的重载
                     requestParam = GsonKit.parseObject2String(args);
                 }
                 if (returnClass == void.class)
@@ -107,13 +107,13 @@ public class HttpRpc
                     final String requestParamFinal = requestParam;
                     //在线程池中排队调用
                     singleExec.execute(() -> {
-                        callHttp(requestUri, methodHead, requestParamFinal);
+                        callHttp(requestUri, uniqueMethodName, requestParamFinal);
                     });
                 }
                 else
                 {
                     //同步调用
-                    String responseJson = callHttp(requestUri, methodHead, requestParam);
+                    String responseJson = callHttp(requestUri, uniqueMethodName, requestParam);
                     returnObj = GsonKit.parseString2Object(responseJson, returnClass);
                 }
                 return returnObj;
