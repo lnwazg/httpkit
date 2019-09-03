@@ -102,12 +102,14 @@ public class Router implements HttpHandler
             {
                 //多斜杠兼容
                 //例如将： http://127.0.0.1:8080/////__info__ 自动翻译成  http://127.0.0.1:8080/__info__
+                ///root/base/////index?fff=4343&bbb=6666   =>  /root/base/index?fff=4343&bbb=6666
                 uri = UrlKit.cleanUri(uri);
                 
                 //此处的处理含有几个优先级，因此可能会有些许性能的损失！但是无妨，因为性能损失换来了系统服务弹性的提升！
                 //1.优先从routesMap中查找     
                 //找到那个路由处理器对象，即可获得要调用的类对象以及方法，还有调用参数
                 uri = UriParamUtils.removeParams(uri);//首先先做去除参数的操作
+                ///root/base/index?fff=4343&bbb=6666  =>  /root/base/index
                 ImmutablePair<ControllerPathMethodMapper, Map<String, String>> pair = findFromControllerMap(uri);
                 if (pair != null)
                 {
@@ -126,6 +128,15 @@ public class Router implements HttpHandler
                 }
                 else
                 {
+                    //TODO 判断RPC服务开关：如果开启了RPC service服务，那么尝试匹配RPC请求uri:    /root/__httpRpc__/{interfaceName}
+                    //如果是"/root/__httpRpc__/"这样的开头，则根据末端的interfaceName，找到当初根据interfaceName注册的interfaceImpl，
+                    //从头中获取uniqueMethodName，然后到interfaceImpl中匹配该uniqueMethodName，获得真正的method对象
+                    //从体中获取params json，根据真正的method对象拿到paramClass[]，然后依次将json还原成对应的参数Object[]
+                    //最后调用该interfaceImpl的method，传入还原出的Object[]，得到响应对象。将响应结果转换为json，返回给客户端即可。
+                    //TODO package search "com.lnwazg.rpc.service"，注册对应的interface和impl。同时RPC服务开关自动打开。
+                    //TODO 客户端负载均衡地RPC的实现（客户端缓存，随机挑取、失败重试）
+                    //TODO 服务端负载均衡地RPC的实现（每次都查注册中心获取随机一个client，然后调用）（每次都多了一次与注册中心的交互，因此效率低是一定的）
+                    
                     //3.查找不到，则从docRoutesMap中查找  例如     /root/games/1.doc?aaa=123
                     //key:   /root/games   value: File
                     //key:   /root/list
