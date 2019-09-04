@@ -73,7 +73,7 @@ public class HttpServer extends Server
      */
     private String[] searchDisks =
         {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"};
-        
+    
     /**
      * 是否初始化过FreeMarker的root目录<br>
      * 仅需初始化一次即可
@@ -392,21 +392,21 @@ public class HttpServer extends Server
      * 是否启用了RPC服务
      */
     private boolean enableRpc = false;
+    
+    /**
+     * 启用RPC服务，并扫描包注册RPC服务的类
+     * @author nan.li
+     * @param packageName
+     * @return
+     */
     public HttpServer packageSearchAndInitRpc(String packageName)
     {
         Logs.i("启用RPC service");
         enableRpc = true;
         List<Class<?>> cList = ClassKit.getPackageAllClasses(packageName.trim());
-        try
+        for (Class<?> clazz : cList)
         {
-            for (Class<?> clazz : cList)
-            {
-                router.registerRpcImpl(clazz);
-            }
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
+            router.registerRpcImpl(clazz);
         }
         return this;
     }
@@ -587,7 +587,7 @@ public class HttpServer extends Server
     {
         this.httpServiceSummary = httpServiceSummary;
     }
-
+    
     public boolean isEnableRpc()
     {
         return enableRpc;

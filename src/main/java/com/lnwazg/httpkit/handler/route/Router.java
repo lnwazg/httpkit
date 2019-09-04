@@ -131,67 +131,56 @@ public class Router implements HttpHandler
                 }
                 else
                 {
-                    //TODO 判断RPC服务开关：如果开启了RPC service服务，那么尝试匹配RPC请求uri:    /root/__httpRpc__/{interfaceName}
+                    //插入的逻辑：RPC服务相关的逻辑
+                    //判断RPC服务开关：如果开启了RPC service服务，那么尝试匹配RPC请求uri:    /root/__httpRpc__/{interfaceName}
                     //如果是"/root/__httpRpc__/"这样的开头，则根据末端的interfaceName，找到当初根据interfaceName注册的interfaceImpl，
                     //从头中获取uniqueMethodName，然后到interfaceImpl中匹配该uniqueMethodName，获得真正的method对象
                     //从体中获取params json，根据真正的method对象拿到paramClass[]，然后依次将json还原成对应的参数Object[]
                     //最后调用该interfaceImpl的method，传入还原出的args[]，得到响应对象。将响应结果转换为json，返回给客户端即可。
-                    
-                    //TODO package search "com.lnwazg.rpc.service"，注册对应的interface和impl。同时RPC服务开关自动打开。
-                    //TODO 客户端负载均衡地RPC的实现（客户端缓存，随机挑取、失败重试）
-                    //TODO 服务端负载均衡地RPC的实现（每次都查注册中心获取随机一个client，然后调用）（每次都多了一次与注册中心的交互，因此效率低是一定的）
-                    
-                    //插入的逻辑：RPC判断
-                    if (ioInfo.getHttpServer().isEnableRpc())
+                    if (ioInfo.getHttpServer().isEnableRpc() && matchRpcServiceUri(uri, ioInfo))
                     {
-                        if (matchRpc(uri, ioInfo))
+                        String serviceName = getRpcServiceName(uri, ioInfo);
+                        Logs.i("RPC call serviceName=" + serviceName);
+                        if (rpcInstanceMap.containsKey(serviceName))
                         {
-                            String serviceName = getRpcServiceName(uri, ioInfo);
-                            Logs.i("RPC call serviceName=" + serviceName);
-                            if (rpcInstanceMap.containsKey(serviceName))
+                            //准备调用
+                            Object interfaceImpl = rpcInstanceMap.get(serviceName);
+                            String uniqueUnfullMethodName = ioInfo.getReader().getHeader("uniqueMethodName");
+                            String reqJson = ioInfo.getReader().getPayloadBody();
+                            Method method = ClassKit.getMethodByUniqueUnFullMethodName(interfaceImpl, uniqueUnfullMethodName);
+                            Logs.d("find service from rpcInstanceMap, uniqueMethodName=" + uniqueUnfullMethodName + " reqJson=" + reqJson + " method=" + (method == null ? "null" : method.getName()));
+                            if (method != null)
                             {
-                                //准备调用
-                                Object interfaceImpl = rpcInstanceMap.get(serviceName);
-                                String uniqueUnfullMethodName = ioInfo.getReader().getHeader("method");
-                                String reqJson = ioInfo.getReader().getPayloadBody();
-                                Method method = ClassKit.getMethodByUniqueUnFullMethodName(interfaceImpl, uniqueUnfullMethodName);
-                                Logs.d("find service from rpcInstanceMap, uniqueMethodName=" + uniqueUnfullMethodName + " reqJson=" + reqJson + " method=" + method);
-                                if (method != null)
+                                Class<?>[] paramClazzArray = method.getParameterTypes();
+                                Object retObj = null;
+                                if (paramClazzArray.length > 0)
                                 {
-                                    Class<?>[] paramClazzArray = method.getParameterTypes();
-                                    Object retObj = null;
-                                    if (paramClazzArray.length > 0)
+                                    Object[] args = new Object[paramClazzArray.length];
+                                    JsonArray jsonArray = GsonKit.parseString2JsonArray(reqJson);
+                                    for (int i = 0; i < args.length; i++)
                                     {
-                                        Object[] args = new Object[paramClazzArray.length];
-                                        JsonArray jsonArray = GsonKit.parseString2JsonArray(reqJson);
-                                        for (int i = 0; i < args.length; i++)
-                                        {
-                                            String aContent = jsonArray.get(i).toString();
-                                            args[i] = GsonKit.parseString2Object(aContent, paramClazzArray[i]);
-                                        }
-                                        retObj = method.invoke(interfaceImpl, args);
+                                        String paramJsonI = jsonArray.get(i).toString();
+                                        args[i] = GsonKit.parseString2Object(paramJsonI, paramClazzArray[i]);
                                     }
-                                    else
-                                    {
-                                        retObj = method.invoke(interfaceImpl);
-                                    }
-                                    String retStr = GsonKit.parseObject2String(retObj);
-                                    ExecMgr.cachedExec.execute(() -> {
-                                        try
-                                        {
-                                            RenderUtils.renderMsg(ioInfo, HttpResponseCode.OK, retStr, "json");
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            e.printStackTrace();
-                                        }
-                                    });
+                                    retObj = method.invoke(interfaceImpl, args);
                                 }
                                 else
                                 {
-                                    Logs.e("method is undefined:" + uniqueUnfullMethodName);
+                                    retObj = method.invoke(interfaceImpl);
                                 }
+                                String retStr = GsonKit.parseObject2String(retObj);
+                                responseAsJson(ioInfo, retStr, HttpResponseCode.OK);
                             }
+                            else
+                            {
+                                Logs.e("method is undefined:" + uniqueUnfullMethodName);
+                                responseAsJson(ioInfo, "method is undefined:" + uniqueUnfullMethodName, HttpResponseCode.SERVICE_UNAVAILABLE);
+                            }
+                        }
+                        else
+                        {
+                            Logs.e("Service not found: " + serviceName);
+                            responseAsJson(ioInfo, "Service not found: " + serviceName, HttpResponseCode.SERVICE_UNAVAILABLE);
                         }
                     }
                     //3.查找不到，则从docRoutesMap中查找  例如     /root/games/1.doc?aaa=123
@@ -256,6 +245,20 @@ public class Router implements HttpHandler
             try
             {
                 RenderUtils.renderMsg(ioInfo, HttpResponseCode.OK, GsonKit.gson.toJson(ioInfo.getHttpServer().getHttpServiceSummary()), "json");
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        });
+    }
+    
+    private void responseAsJson(IOInfo ioInfo, String msg, HttpResponseCode code)
+    {
+        ExecMgr.cachedExec.execute(() -> {
+            try
+            {
+                RenderUtils.renderMsg(ioInfo, code, msg, "json");
             }
             catch (Exception e)
             {
@@ -422,7 +425,7 @@ public class Router implements HttpHandler
      * @param ioInfo
      * @return
      */
-    private boolean matchRpc(String uri, IOInfo ioInfo)
+    private boolean matchRpcServiceUri(String uri, IOInfo ioInfo)
     {
         ///root/__httpRpc__/{interfaceName}
         return uri.startsWith(String.format("%s/__httpRpc__/", ioInfo.getHttpServer().getBasePath()));
@@ -893,7 +896,7 @@ public class Router implements HttpHandler
     public void registerRpcImpl(Class<?> clazz)
     {
         String interfaceName = clazz.getInterfaces()[0].getSimpleName();
-        Logs.i("注册RPC service:" + interfaceName);
+        Logs.i("注册RPC Service, serverName=" + interfaceName);
         rpcInstanceMap.put(interfaceName, ClassKit.newInstance(clazz));
     }
     
