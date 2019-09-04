@@ -57,6 +57,22 @@ public class HttpRpc
     }
     
     /**
+     * 使用集群资源
+     * @author nan.li
+     * @param uris
+     * @return
+     */
+    public static HttpRpcCluster useCluster(String... uris)
+    {
+        HttpRpcCluster httpRpcCluster = new HttpRpcCluster();
+        for (String uri : uris)
+        {
+            httpRpcCluster.addHttpRpc(use(uri));
+        }
+        return httpRpcCluster;
+    }
+    
+    /**
      * 引用某个interface，生产这个interface的访问代理工具
      * @author nan.li
      * @param interfaceClazz
@@ -155,4 +171,5 @@ public class HttpRpc
         //http://127.0.0.1:8080/root/__httpRpc__/{interfaceName}
         return String.format("%s/__httpRpc__/%s", uri, interfaceClazz.getSimpleName());
     }
+    
 }
