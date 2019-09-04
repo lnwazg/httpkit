@@ -4,8 +4,6 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.CharEncoding;
 
@@ -27,14 +25,11 @@ import net.sf.cglib.proxy.MethodProxy;
 public class HttpRpc
 {
     /**
-    * 单线程的线程池
-    */
-    public static ExecutorService singleExec = Executors.newSingleThreadExecutor();
-    
-    /**
      * 客户端列表
      */
     static Map<String, HttpRpc> clients = new HashMap<String, HttpRpc>();
+    
+    Map<Class<?>, Object> refMap = new HashMap<>();
     
     /**
      * 服务资源的位置
@@ -70,22 +65,23 @@ public class HttpRpc
     @SuppressWarnings("unchecked")
     public <T> T reference(Class<T> interfaceClazz)
     {
-        Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(interfaceClazz);//设置动态代理的父类信息
-        // 回调方法
-        enhancer.setCallback(createMethodInterceptor(interfaceClazz));//设置方法过滤器
-        // 创建代理对象
-        return (T)enhancer.create();
+        if (!refMap.containsKey(interfaceClazz))
+        {
+            Enhancer enhancer = new Enhancer();
+            enhancer.setSuperclass(interfaceClazz);//设置动态代理的父类信息
+            // 回调方法
+            enhancer.setCallback(createMethodInterceptor(interfaceClazz));//设置方法过滤器
+            // 创建代理对象
+            T t = (T)enhancer.create();
+            refMap.put(interfaceClazz, t);
+        }
+        return (T)refMap.get(interfaceClazz);
     }
     
     private MethodInterceptor createMethodInterceptor(Class<?> interfaceClazz)
     {
         return new MethodInterceptor()
         {
-            //            obj - "this", the enhanced object   obj是生成的那个代理对象实例
-            //            method - intercepted Method 
-            //            args - argument array; primitive types are wrapped 
-            //            proxy - used to invoke super (non-intercepted method); may be called as many times as needed 
             @Override
             public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy)
                 throws Throwable
@@ -111,8 +107,7 @@ public class HttpRpc
                 {
                     //异步调用
                     final String requestParamFinal = requestParam;
-                    //在线程池中排队调用
-                    singleExec.execute(() -> {
+                    new Thread(() -> {
                         try
                         {
                             callHttp(requestUri, uniqueMethodName, requestParamFinal);
@@ -121,7 +116,7 @@ public class HttpRpc
                         {
                             Logs.error(e);
                         }
-                    });
+                    }).start();
                 }
                 else
                 {

@@ -93,7 +93,7 @@ public class HttpReader implements Closeable
     /**
      * 消息体字节码
      */
-//    private byte[] body;
+    //    private byte[] body;
     
     /**
      * 消息体字符串，跟body字节码一一对应
@@ -136,15 +136,15 @@ public class HttpReader implements Closeable
      * @author nan.li
      * @return
      */
-//    public byte[] readBody()
-//    {
-//        return body;
-//    }
-//    
-//    public byte[] getBody()
-//    {
-//        return body;
-//    }
+    //    public byte[] readBody()
+    //    {
+    //        return body;
+    //    }
+    //    
+    //    public byte[] getBody()
+    //    {
+    //        return body;
+    //    }
     
     public String getPayloadBody()
     {
@@ -156,23 +156,23 @@ public class HttpReader implements Closeable
      * @author nan.li
      * @return
      */
-//    public String readBodyAsString()
-//    {
-//        try
-//        {
-//            return new String(body, CharEncoding.UTF_8);
-//        }
-//        catch (UnsupportedEncodingException e)
-//        {
-//            e.printStackTrace();
-//        }
-//        return null;
-//    }
+    //    public String readBodyAsString()
+    //    {
+    //        try
+    //        {
+    //            return new String(body, CharEncoding.UTF_8);
+    //        }
+    //        catch (UnsupportedEncodingException e)
+    //        {
+    //            e.printStackTrace();
+    //        }
+    //        return null;
+    //    }
     
-//    public String getBodyAsString()
-//    {
-//        return readBodyAsString();
-//    }
+    //    public String getBodyAsString()
+    //    {
+    //        return readBodyAsString();
+    //    }
     
     public String getRequestType()
     {
