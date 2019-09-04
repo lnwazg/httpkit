@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.CharEncoding;
+import org.apache.commons.lang3.RandomUtils;
 
 import com.lnwazg.kit.gson.GsonKit;
 import com.lnwazg.kit.http.HttpUtils;
@@ -34,42 +35,23 @@ public class HttpRpc
     /**
      * 服务资源的位置
      */
-    private String uri;
+    private String[] URIs;
     
-    public HttpRpc(String uri)
+    public HttpRpc(String[] URIs)
     {
-        this.uri = uri;
+        this.URIs = URIs;
     }
     
     /**
-     * 使用某个位置的http服务资源
+     * 使用某个位置的http服务资源<br>
+     * 可指定多处位置。若指定多处位置，则每次访问会随机挑选一个位置
      * @author nan.li
-     * @param uri
+     * @param URIs
      * @return
      */
-    public static HttpRpc use(String uri)
+    public static HttpRpc use(String... URIs)
     {
-        if (!clients.containsKey(uri))
-        {
-            clients.put(uri, new HttpRpc(uri));
-        }
-        return clients.get(uri);
-    }
-    
-    /**
-     * 使用集群资源
-     * @author nan.li
-     * @param uris
-     * @return
-     */
-    public static HttpRpcCluster useCluster(String... uris)
-    {
-        HttpRpcCluster httpRpcCluster = new HttpRpcCluster();
-        for (String uri : uris)
-        {
-            httpRpcCluster.addHttpRpc(use(uri));
-        }
-        return httpRpcCluster;
+        return new HttpRpc(URIs);
     }
     
     /**
@@ -109,7 +91,7 @@ public class HttpRpc
                 //4.如果该method的返回类型为void，则做成异步调用（起线程）；否则做成同步调用
                 //5.对于同步调用，等待调用结果（json ），然后将其返序列化成对象
                 Object returnObj = null;
-                //                returnObj = proxy.invokeSuper(obj, args);
+                //returnObj = proxy.invokeSuper(obj, args);
                 String requestUri = createRequestUri(interfaceClazz);
                 String uniqueMethodName = ClassKit.getUniqueMethodName(method);//通过方法名信息特殊码生成唯一方法名，来实现方法名的“重载”
                 String requestParam = "";//请求体中的json参数。默认为无参数，则请求参数为空
@@ -157,11 +139,13 @@ public class HttpRpc
     private String callHttp(String requestUri, String uniqueMethodName, String requestParam)
         throws UnsupportedEncodingException
     {
-        return HttpUtils.doPost(requestUri, "application/json", requestParam.getBytes(CharEncoding.UTF_8), Maps.asStrMap("uniqueMethodName", uniqueMethodName), HttpUtils.CONNECT_TIME_OUT, HttpUtils.READ_TIME_OUT);
+        Logs.i("begin to post " + requestUri);
+        return HttpUtils.doPost(requestUri, "application/json", requestParam.getBytes(CharEncoding.UTF_8), Maps.asStrMap("uniqueMethodName", uniqueMethodName), 3000, 3000);
     }
     
     /**
-     * 生成请求服务地址
+     * 生成请求服务地址<br>
+     * 从可用的请求列表中随机选取一个
      * @author nan.li
      * @param interfaceClazz
      * @return
@@ -169,7 +153,7 @@ public class HttpRpc
     private String createRequestUri(Class<?> interfaceClazz)
     {
         //http://127.0.0.1:8080/root/__httpRpc__/{interfaceName}
-        return String.format("%s/__httpRpc__/%s", uri, interfaceClazz.getSimpleName());
+        return String.format("%s/__httpRpc__/%s", URIs[RandomUtils.nextInt(0, URIs.length)], interfaceClazz.getSimpleName());
     }
     
 }
