@@ -139,7 +139,7 @@ public class HttpRpc
     private String callHttp(String requestUri, String uniqueMethodName, String requestParam)
         throws UnsupportedEncodingException
     {
-        Logs.i("begin to post " + requestUri);
+        Logs.i("begin to call http RPC, post url=" + requestUri);
         return HttpUtils.doPost(requestUri, "application/json", requestParam.getBytes(CharEncoding.UTF_8), Maps.asStrMap("uniqueMethodName", uniqueMethodName), 3000, 3000);
     }
     
